@@ -1,141 +1,200 @@
-#include <cassert>
+// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
+// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
 
+// Learn about Dear ImGui:
+// - FAQ                  https://dearimgui.com/faq
+// - Getting Started      https://dearimgui.com/getting-started
+// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
+// - Introduction, links and more at the top of imgui.cpp
+
+#include <windows.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include <stdio.h>
-#include <Windows.h>
+#define GL_SILENCE_DEPRECATION
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <GLES2/gl2.h>
+#endif
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#include "hidapi.h"
-#include "FlightData.h"
+#include "PTO2_for_BMS.hpp"
 
-//  BACKLIGHT FULL:		02 05 BF 00 00 03 49 00 FF 00 00 00 00 00
-//  BACKLIGHT OFF:		02 05 BF 00 00 03 49 00 00 00 00 00 00 00
-//  GEAR HANDLE BRIGHT:	02 05 BF 00 00 03 49 01 FF 00 00 00 00 00
-//  GEAR HANDLE OFF:	02 05 BF 00 00 03 49 01 00 00 00 00 00 00
-//  SL BRIGHT:			02 05 BF 00 00 03 49 02 FF 00 00 00 00 00
-//  SL DIM:				02 05 BF 00 00 03 49 02 00 00 00 00 00 00
-//  FLAG BRIGHT:		02 05 BF 00 00 03 49 03 FF 00 00 00 00 00
-//  FLAG BRIGHT:		02 05 BF 00 00 03 49 03 00 00 00 00 00 00
-//  MASTER CAUTION ON:	02 05 BF 00 00 03 49 04 01 00 00 00 00 00
-//  MASTER CAUTION OFF:	02 05 BF 00 00 03 49 04 00 00 00 00 00 00
-//  JETTISON ON:		02 05 BF 00 00 03 49 05 01 00 00 00 00 00
-//  JETTISON OFF:		02 05 BF 00 00 03 49 05 00 00 00 00 00 00
-//  CTR ON:				02 05 BF 00 00 03 49 06 01 00 00 00 00 00
-//  CTR OFF:			02 05 BF 00 00 03 49 06 00 00 00 00 00 00
-//  LI ON:				02 05 BF 00 00 03 49 07 01 00 00 00 00 00
-//  LI OFF:				02 05 BF 00 00 03 49 07 00 00 00 00 00 00
-//  LO ON:				02 05 BF 00 00 03 49 08 01 00 00 00 00 00
-//  LO OFF:				02 05 BF 00 00 03 49 08 00 00 00 00 00 00
-//  RO ON:				02 05 BF 00 00 03 49 09 01 00 00 00 00 00
-//  RO OFF:				02 05 BF 00 00 03 49 09 00 00 00 00 00 00
-//  RI ON:				02 05 BF 00 00 03 49 0A 01 00 00 00 00 00
-//  RI OFF:				02 05 BF 00 00 03 49 0A 00 00 00 00 00 00
-//  FLAPS ON:			02 05 BF 00 00 03 49 0B 01 00 00 00 00 00
-//  FLAPS OFF:			02 05 BF 00 00 03 49 0B 00 00 00 00 00 00
-//  NOSE ON:			02 05 BF 00 00 03 49 0C 01 00 00 00 00 00
-//  NOSE OFF:			02 05 BF 00 00 03 49 0C 00 00 00 00 00 00
-//  FULL ON:			02 05 BF 00 00 03 49 0D 01 00 00 00 00 00
-//  FULL OFF:			02 05 BF 00 00 03 49 0D 00 00 00 00 00 00
-//  RIGHT ON:			02 05 BF 00 00 03 49 0E 01 00 00 00 00 00
-//  RIGHT OFF:			02 05 BF 00 00 03 49 0E 00 00 00 00 00 00
-//  LEFT ON:			02 05 BF 00 00 03 49 0F 01 00 00 00 00 00
-//  LEFT OFF:			02 05 BF 00 00 03 49 0F 00 00 00 00 00 00
-//  HALF ON:			02 05 BF 00 00 03 49 10 01 00 00 00 00 00
-//  HALF OFF:			02 05 BF 00 00 03 49 10 00 00 00 00 00 00
-//  HOOK ON:			02 05 BF 00 00 03 49 11 01 00 00 00 00 00
-//  HOOK OFF:			02 05 BF 00 00 03 49 11 00 00 00 00 00 00
+// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
+// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
+// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
+#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
+#pragma comment(lib, "legacy_stdio_definitions")
+#endif
 
-enum PTO2_light : unsigned char {
-	/* Brightness has 256 values, from 0x00 to 0xff */
-	BACKLIGHT_BRIGHTNESS = 0x00,	// Brightness of panel backlight
-	GEAR_HANDLE_BRIGHTNESS,			// Gear handle has variable brightness, not on/off
-	SL_BRIGHTNESS,					// Buttons brightness (master caution, station select...)
-	FLAG_BRIGHTNESS,				// Flags brightness (NOSE/LEFT/RIGHT, HOOK...)
-	/* Light have two states, off and on, either 0x00 or 0x01.
-	Their brightness is controlled by SL or FLAG_BRIGHTNESS */
-	MASTER_CAUTION,
-	JETTISON,
-	STATION_CTR,
-	STATION_LI,
-	STATION_LO,
-	STATION_RO,
-	STATION_RI,
-	FLAPS,
-	NOSE,
-	FULL,
-	RIGHT,
-	LEFT,
-	HALF,
-	HOOK
-};
+// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
+#ifdef __EMSCRIPTEN__
+#include "../libs/emscripten/emscripten_mainloop_stub.h"
+#endif
 
-bool	set_light(hid_device *device, PTO2_light light, bool set_on)
+static void glfw_error_callback(int error, const char* description)
 {
-	assert( !(light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS) );
-	if (light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS)
-		return false;
-
-	unsigned char max_bright = (light == GEAR_HANDLE_BRIGHTNESS ? 0xff : 0x01);
-	unsigned char brightness = (set_on ? max_bright : 0x00);
-	unsigned char send_buf[] = {
-		0x02, 0x05, 0xBF, 0x00,
-		0x00, 0x03, 0x49, light,
-		brightness, 0x00, 0x00, 0x00,
-		0x00, 0x00 };
-	return (hid_write(device, send_buf, sizeof(send_buf)) != -1);
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-struct AllLightBits {
-	unsigned int light_bits;
-	unsigned int light_bits2;
-	unsigned int light_bits3;
-	bool operator==(AllLightBits const&) const = default;
-};
-
-int	main(void)
+// Main code
+int main(void)
 {
-	if (hid_init() != 0)
-		return 1;
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit())
+        return 1;
 
-	hid_device *handle = hid_open(0x4098, 0xbf05, NULL);
-	if (!handle) {
-		printf("unable to open device\n");
-		hid_exit();
-		return 1;
-	}
+    // Decide GL+GLSL versions
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+    // GL ES 2.0 + GLSL 100 (WebGL 1.0)
+    const char* glsl_version = "#version 100";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#elif defined(IMGUI_IMPL_OPENGL_ES3)
+    // GL ES 3.0 + GLSL 300 es (WebGL 2.0)
+    const char* glsl_version = "#version 300 es";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#elif defined(__APPLE__)
+    // GL 3.2 + GLSL 150
+    const char* glsl_version = "#version 150";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+#else
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
 
-	set_light(handle, JETTISON, false);
+    // Create window with graphics context
+    GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
+    if (window == nullptr)
+        return 1;
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); // Enable vsync
 
-	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
-	if (!file_map_handle)
-	{
-		printf("Failed to open shared memory thingy\n");
-		return 1;
-	}
-	LPVOID bms_shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
-	const FlightData* flight_data = reinterpret_cast<FlightData*>(bms_shared_mem);
-	if (!flight_data)
-	{
-		printf("Fuck\n");
-		return 1;
-	}
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-	printf("Ready!\n");
-	AllLightBits old_lights = {};
-	while (true)
-	{
-		AllLightBits new_lights = { flight_data->lightBits, flight_data->lightBits2, flight_data->lightBits3 };
-		if (old_lights != new_lights)
-		{
-			set_light(handle, MASTER_CAUTION, flight_data->IsSet(FlightData::MasterCaution));
-			set_light(handle, GEAR_HANDLE_BRIGHTNESS, flight_data->IsSet2(FlightData::GEARHANDLE));
-			set_light(handle, NOSE, flight_data->IsSet3(FlightData::NoseGearDown));
-			set_light(handle, LEFT, flight_data->IsSet3(FlightData::LeftGearDown));
-			set_light(handle, RIGHT, flight_data->IsSet3(FlightData::RightGearDown));
-			set_light(handle, HOOK, flight_data->IsSet(FlightData::Hook));
-			old_lights = new_lights;
-		}
-		Sleep(100);
-	}
+    // Setup Dear ImGui style
+    //ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+    ImGui::GetStyle() = get_custom_imgui_style();
+    io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85, 17);
 
-	hid_close(handle);
-	hid_exit();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+#ifdef __EMSCRIPTEN__
+    ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
+#endif
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    // Load Fonts
+    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
+    // - Read 'docs/FONTS.md' for more instructions and details.
+    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
+    //io.Fonts->AddFontDefault();
+    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    //IM_ASSERT(font != nullptr);
+
+    // Our state
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    // Main loop
+#ifdef __EMSCRIPTEN__
+    // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
+    // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
+    io.IniFilename = nullptr;
+    EMSCRIPTEN_MAINLOOP_BEGIN
+#else
+    while (!glfwWindowShouldClose(window))
+#endif
+    {
+        // Poll and handle events (inputs, window resize, etc.)
+        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
+        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+        glfwPollEvents();
+        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
+        {
+            ImGui_ImplGlfw_Sleep(10);
+            continue;
+        }
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        render_main_window(io);
+
+        // Rendering
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Dirty (good?) trick to give CPU cycles back when we're not focused
+        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED))
+            ImGui_ImplGlfw_Sleep(10);
+
+        glfwSwapBuffers(window);
+    }
+#ifdef __EMSCRIPTEN__
+    EMSCRIPTEN_MAINLOOP_END;
+#endif
+
+    UnmapViewOfFile(g_context.flight_data);
+    CloseHandle(g_context.falcon_shared_mem_handle);
+
+    hid_close(g_context.hid_device);
+    hid_exit();
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
+    return 0;
+}
+
+// You can also do a trick by setting /ENTRY to "mainCRTStartup", which makes the Windows application
+// eventually call main() on entry. Skips the need for this WinMain thingy.
+int CALLBACK WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPSTR lpCmdLine,
+    _In_ int nShowCmd
+)
+{
+    return main();
 }
