@@ -27,6 +27,7 @@ struct Context
 	
 	std::jthread		thread;
 	std::atomic_bool	thread_running = false;
+	std::atomic_bool	thread_error = false;
 };
 
 extern Context	g_context;

@@ -84,7 +84,10 @@ bool	thread_routine()
 		success = success && set_light(g_context.hid_device, RIGHT, flight_data->IsSet3(FlightData::RightGearDown));
 		success = success && set_light(g_context.hid_device, HOOK, flight_data->IsSet(FlightData::Hook));
 		if (!success)
+		{
 			g_context.thread_running = false;
+			g_context.thread_error = true;
+		}
 		std::this_thread::sleep_for(THREAD_SLEEP_INTERVAL);
 	}
 
@@ -102,6 +105,14 @@ void    render_main_window(ImGuiIO& io)
 		| ImGuiWindowFlags_NoDecoration;
 	ImGui::GetStyle().WindowBorderSize = 0;
 	ImGui::Begin("main", nullptr, flags);
+
+	// No need to use atomic CAS here I think, nobody else would set thread_error to false
+	if (g_context.thread_error == true)
+	{
+		hid_close(g_context.hid_device);
+		g_context.hid_device = nullptr;
+		g_context.thread_error = false;
+	}
 
 	// TODO: Case when device disconnects after this pointer has been assigned 
 	if (!g_context.hid_device && !(g_context.hid_device = hid_open(0x4098, 0xbf05, NULL)))
