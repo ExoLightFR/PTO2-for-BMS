@@ -114,9 +114,6 @@
     <ClInclude Include="include\IVibeData.h" />
     <ClInclude Include="PTO2_for_BMS.hpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="hidapi\hidapi.rc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
