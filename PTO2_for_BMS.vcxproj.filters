@@ -104,5 +104,8 @@
     <ClInclude Include="hidapi\hidapi_winapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hidapi\hidapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

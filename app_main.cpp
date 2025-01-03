@@ -56,20 +56,21 @@ bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2
 	return pressed;
 }
 
-bool	thread_routine()
+void	thread_routine()
 {
 	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
 	if (!file_map_handle)
 	{
-		printf("Failed to open shared memory thingy\n");
-		return false;
+		printf("OpenFileMapping failed\n");
+		return;
 	}
 	LPVOID bms_shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
 	const FlightData *flight_data = reinterpret_cast<FlightData *>(bms_shared_mem);
 	if (!flight_data)
 	{
-		printf("Fuck\n");
-		return false;
+		printf("MapViewOfFile failed\n");
+		UnmapViewOfFile(bms_shared_mem);
+		return;
 	}
 
 	printf("Ready!\n");
@@ -86,14 +87,13 @@ bool	thread_routine()
 		if (!success)
 		{
 			g_context.thread_running = false;
-			g_context.thread_error = true;
+			g_context.require_device_reopen = true;
 		}
 		std::this_thread::sleep_for(THREAD_SLEEP_INTERVAL);
 	}
 
 	UnmapViewOfFile(bms_shared_mem);
 	CloseHandle(file_map_handle);
-	return true;
 }
 
 void    render_main_window(ImGuiIO& io)
@@ -106,22 +106,21 @@ void    render_main_window(ImGuiIO& io)
 	ImGui::GetStyle().WindowBorderSize = 0;
 	ImGui::Begin("main", nullptr, flags);
 
-	// No need to use atomic CAS here I think, nobody else would set thread_error to false
-	if (g_context.thread_error == true)
+	// No need to use atomic CAS here I think, nobody else would set require_device_reopen to false
+	if (g_context.require_device_reopen == true)
 	{
 		hid_close(g_context.hid_device);
 		g_context.hid_device = nullptr;
-		g_context.thread_error = false;
+		g_context.require_device_reopen = false;
 	}
 
-	// TODO: Case when device disconnects after this pointer has been assigned 
 	if (!g_context.hid_device && !(g_context.hid_device = hid_open(0x4098, 0xbf05, NULL)))
 	{
 		ImGui::Text("No Winwing PTO2 detected!");
 		goto end_window;
 	}
 
-	ImGui::Text("Hello, world!");
+	ImGui::TextWrapped("This small app is NOT made to run alongside SimAppPro. Rather, it is a complete replacement.");
 
 	if (g_context.thread_running)
 	{

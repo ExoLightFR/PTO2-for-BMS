@@ -96,6 +96,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="hidapi\hidapi.h" />
     <ClInclude Include="hidapi\hidapi_cfgmgr32.h" />
     <ClInclude Include="hidapi\hidapi_hidclass.h" />
     <ClInclude Include="hidapi\hidapi_hidpi.h" />

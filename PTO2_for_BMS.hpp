@@ -22,12 +22,12 @@ void		render_main_window(ImGuiIO& io);
 struct Context
 {
 	hid_device			*hid_device = nullptr;
-	HANDLE				falcon_shared_mem_handle = nullptr;
-	const FlightData	*flight_data = nullptr;
 	
 	std::jthread		thread;
 	std::atomic_bool	thread_running = false;
-	std::atomic_bool	thread_error = false;
+	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
+	// Used in case of hid_write error.
+	std::atomic_bool	require_device_reopen = false;
 };
 
 extern Context	g_context;
