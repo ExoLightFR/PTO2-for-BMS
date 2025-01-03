@@ -114,6 +114,13 @@
     <ClInclude Include="include\FlightData.h" />
     <ClInclude Include="include\IVibeData.h" />
     <ClInclude Include="PTO2_for_BMS.hpp" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PTO2_for_BMS.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\PTO2_for_BMS_icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

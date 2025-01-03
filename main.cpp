@@ -21,6 +21,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h> // Will drag system OpenGL headers
 
+#include "resource.h"
 #include "PTO2_for_BMS.hpp"
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
@@ -103,6 +104,13 @@ int main(void)
 	ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
 #endif
 	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// Set Window's icon
+	HWND hWnd = glfwGetWin32Window(window);
+	HINSTANCE hInstance = GetModuleHandleA(NULL);
+	HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 
 	// Load Fonts
 	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
