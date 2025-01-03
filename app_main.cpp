@@ -114,7 +114,7 @@ void    render_main_window(ImGuiIO& io)
 		g_context.require_device_reopen = false;
 	}
 
-	if (!g_context.hid_device && !(g_context.hid_device = hid_open(0x4098, 0xbf05, NULL)))
+	if (!g_context.hid_device && !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, NULL)))
 	{
 		ImGui::Text("No Winwing PTO2 detected!");
 		goto end_window;
