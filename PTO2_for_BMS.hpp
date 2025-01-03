@@ -8,6 +8,10 @@
 #include "imgui.h"
 #include "hidapi.h"
 #include "FlightData.h"
+#include "resource.h"
+
+constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;
+constexpr int	WINDOW_ICON_ID_RED		= IDI_ICON2;
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
 constexpr int				WIN_WIDTH = 400;
@@ -20,6 +24,17 @@ extern const char Roboto_Medium_compressed_data_base85[148145 + 1];
 
 ImGuiStyle	get_custom_imgui_style();
 void		render_main_window(ImGuiIO& io);
+
+inline void		set_window_icon(int IDI_thing)
+{
+	// Set Window's icon
+	//HWND hWnd = glfwGetWin32Window(window);
+	HWND hWnd = GetActiveWindow();
+	HINSTANCE hInstance = GetModuleHandleA(NULL);
+	HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_thing));
+	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+}
 
 struct Context
 {

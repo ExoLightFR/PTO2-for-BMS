@@ -105,12 +105,7 @@ int main(void)
 #endif
 	ImGui_ImplOpenGL3_Init(glsl_version);
 
-	// Set Window's icon
-	HWND hWnd = glfwGetWin32Window(window);
-	HINSTANCE hInstance = GetModuleHandleA(NULL);
-	HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	set_window_icon(IDI_ICON2);
 
 	// Load Fonts
 	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.

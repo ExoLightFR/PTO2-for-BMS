@@ -1,4 +1,5 @@
 #include "PTO2_for_BMS.hpp"
+#include "resource.h"
 
 Context g_context = {};
 
@@ -94,6 +95,7 @@ void	thread_routine()
 
 	UnmapViewOfFile(bms_shared_mem);
 	CloseHandle(file_map_handle);
+	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
 void    render_main_window(ImGuiIO& io)
@@ -129,6 +131,7 @@ void    render_main_window(ImGuiIO& io)
 			g_context.thread_running = false;
 			g_context.thread.join();
 		}
+		set_window_icon(WINDOW_ICON_ID_GREEN);
 	}
 	else
 	{
@@ -136,6 +139,7 @@ void    render_main_window(ImGuiIO& io)
 		{
 			g_context.thread = std::jthread(&thread_routine);
 		}
+		set_window_icon(WINDOW_ICON_ID_RED);
 	}
 
 end_window:
