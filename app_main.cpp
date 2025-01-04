@@ -85,6 +85,19 @@ bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2
 	return pressed;
 }
 
+/*
+* Read Falcon's shared memory to check if associated PTO light should be turned on.
+*/
+static bool	is_light_on(void *shared_mem, PTO2LightID PTO_light)
+{
+	auto &light_bind = g_context.PTO2_light_assignment_map[PTO_light];
+	if (!light_bind.has_value())
+		return false;
+	const char *shared_mem_bytes = reinterpret_cast<const char *>(shared_mem);
+	auto *light_bits = reinterpret_cast<const unsigned int *>(shared_mem_bytes + light_bind->ID.offset);
+	return *light_bits & light_bind->ID.light_bit;
+}
+
 void	thread_routine()
 {
 	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
@@ -107,12 +120,12 @@ void	thread_routine()
 	while (g_context.thread_running)
 	{
 		bool success = true;
-		success = success && set_PTO2_light(g_context.hid_device, MASTER_CAUTION, flight_data->IsSet(FlightData::MasterCaution));
-		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, flight_data->IsSet2(FlightData::GEARHANDLE));
-		success = success && set_PTO2_light(g_context.hid_device, NOSE, flight_data->IsSet3(FlightData::NoseGearDown));
-		success = success && set_PTO2_light(g_context.hid_device, LEFT, flight_data->IsSet3(FlightData::LeftGearDown));
-		success = success && set_PTO2_light(g_context.hid_device, RIGHT, flight_data->IsSet3(FlightData::RightGearDown));
-		success = success && set_PTO2_light(g_context.hid_device, HOOK, flight_data->IsSet(FlightData::Hook));
+		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, is_light_on(bms_shared_mem, GEAR_HANDLE_BRIGHTNESS));
+		for (int i = MASTER_CAUTION; i <= HOOK; ++i)
+		{
+			PTO2LightID PTO_light = static_cast<PTO2LightID>(i);
+			success = success && set_PTO2_light(g_context.hid_device, PTO_light, is_light_on(bms_shared_mem, PTO_light));
+		}
 		if (!success)
 		{	// Failed HID write operation, most likely because device is disconnected: stop the thread.
 			g_context.thread_running = false;
@@ -210,6 +223,11 @@ void    render_main_window(ImGuiIO& io)
 		set_window_icon(WINDOW_ICON_ID_RED);
 	}
 
+	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
+	bool disable_editing = g_context.thread_running;
+	if (disable_editing)
+		ImGui::BeginDisabled();
+
 	PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
 	PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
 	PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
@@ -228,6 +246,9 @@ void    render_main_window(ImGuiIO& io)
 	PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
 	PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
 	PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+
+	if (disable_editing)
+		ImGui::EndDisabled();
 
 	ImGui::End();
 }

@@ -17,8 +17,8 @@ constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;
 constexpr int	WINDOW_ICON_ID_RED		= IDI_ICON2;
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
-constexpr int				WIN_WIDTH = 600;
-constexpr int				WIN_HEIGHT = 400;
+constexpr int				WIN_WIDTH = 610;
+constexpr int				WIN_HEIGHT = 560;
 constexpr unsigned short	PTO2_VENDOR_ID = 0x4098;
 constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
@@ -72,7 +72,7 @@ struct Context
 	// Used in case of hid_write error.
 	std::atomic_bool	require_device_reopen = false;
 
-	std::vector<FalconLightData>	falcon_lights = get_falcon_light_data_list();
+	const std::vector<FalconLightData>	falcon_lights = get_falcon_light_data_list();
 	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
 	std::array< std::optional<FalconLightData>, HOOK + 1 >	PTO2_light_assignment_map = {};
 };
