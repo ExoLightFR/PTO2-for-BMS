@@ -77,12 +77,16 @@ int main(void)
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
+	// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);	// Disable window resizing entirely
+
 	// Create window with graphics context
 	GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
+	// ALlow window resizing but set minimum to never crop content
+	glfwSetWindowSizeLimits(window, WIN_WIDTH, WIN_HEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
