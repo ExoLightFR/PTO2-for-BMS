@@ -3,6 +3,8 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <array>
+#include <optional>
 
 #include <Windows.h>
 
@@ -15,8 +17,8 @@ constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;
 constexpr int	WINDOW_ICON_ID_RED		= IDI_ICON2;
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
-constexpr int				WIN_WIDTH = 400;
-constexpr int				WIN_HEIGHT = 300;
+constexpr int				WIN_WIDTH = 600;
+constexpr int				WIN_HEIGHT = 400;
 constexpr unsigned short	PTO2_VENDOR_ID = 0x4098;
 constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
@@ -52,8 +54,11 @@ struct FalconLightData
 {
 	std::string	display_name;
 	std::string	search_name;
-	ptrdiff_t	offset;			// Offset in shared memory in which to read
-	int			light_bit;		// Light bit to check against
+	struct LightID {
+		ptrdiff_t	offset;			// Offset in shared memory in which to read
+		int			light_bit;		// Light bit to check against
+		bool operator==(LightID const &) const = default;
+	} ID;
 };
 std::vector<FalconLightData>	get_falcon_light_data_list();
 
@@ -68,7 +73,8 @@ struct Context
 	std::atomic_bool	require_device_reopen = false;
 
 	std::vector<FalconLightData>	falcon_lights = get_falcon_light_data_list();
-
+	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
+	std::array< std::optional<FalconLightData>, HOOK + 1 >	PTO2_light_assignment_map = {};
 };
 
 ImGuiStyle	get_custom_imgui_style();

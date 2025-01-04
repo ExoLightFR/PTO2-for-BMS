@@ -126,6 +126,41 @@ void	thread_routine()
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
+static void	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_light_ID)
+{
+	auto &PTO2_light_bind = g_context.PTO2_light_assignment_map[PTO_light_ID];
+
+	bool disable_button = !PTO2_light_bind.has_value();
+	if (disable_button)
+		ImGui::BeginDisabled();
+
+	ImGui::PushID(PTO_light_ID);
+	if (ColoredButton("Erase", { 172, 0, 0 }))
+		g_context.PTO2_light_assignment_map[PTO_light_ID].reset();
+	ImGui::PopID();
+	
+	if (disable_button)
+		ImGui::EndDisabled();
+	
+	ImGui::SameLine();
+
+	const char *preview = PTO2_light_bind ? PTO2_light_bind->display_name.c_str() : "";
+	if (ImGui::BeginCombo(light_name, preview, ImGuiComboFlags_PopupAlignLeft))
+	{
+		for (auto const &light : g_context.falcon_lights)
+		{
+			bool selected = PTO2_light_bind.has_value() && (PTO2_light_bind->ID == light.ID);
+
+			if (ImGui::Selectable(light.display_name.c_str(), selected))
+				g_context.PTO2_light_assignment_map[PTO_light_ID] = light;
+
+			if (selected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+}
+
 void    render_main_window(ImGuiIO& io)
 {
 	ImGui::SetNextWindowSize(io.DisplaySize);
@@ -150,7 +185,8 @@ void    render_main_window(ImGuiIO& io)
 		&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
 	{
 		ImGui::Text("No Winwing PTO2 detected!");
-		goto end_window;
+		ImGui::End();
+		return;
 	}
 
 	ImGui::TextWrapped("This small app is NOT made to run alongside SimAppPro. "
@@ -174,20 +210,24 @@ void    render_main_window(ImGuiIO& io)
 		set_window_icon(WINDOW_ICON_ID_RED);
 	}
 
-	if (ImGui::BeginCombo("Gear handle light", "", ImGuiComboFlags_PopupAlignLeft))
-	{
-		for (auto const &light : g_context.falcon_lights)
-		{
-			ImGui::Selectable(light.display_name.c_str());
-		}
-		ImGui::EndCombo();
-	}
+	PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
+	PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
+	
+	PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
+	PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
+	PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
 
-	for (auto const &light : g_context.falcon_lights)
-	{
-		ImGui::Text(light.display_name.c_str());
-	}
+	PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
+	PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
+	PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
+	
+	PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
+	PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
+	PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
+	PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
+	PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
+	PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
 
-end_window:
 	ImGui::End();
 }

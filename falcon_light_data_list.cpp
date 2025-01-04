@@ -13,8 +13,10 @@ inline FalconLightData	create_FalconLightData_struct(const char *name, int light
 	return FalconLightData{
 		.display_name = name,
 		.search_name = std::move(lowercase),
-		.light_bit = light_bit,
-		.offset = reinterpret_cast<char*>(member) - reinterpret_cast<char*>(&flightData)
+		.ID = {
+			.offset = reinterpret_cast<char *>(member) - reinterpret_cast<char *>(&flightData),
+			.light_bit = light_bit,
+		}
 	};
 }
 
