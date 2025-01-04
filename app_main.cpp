@@ -1,33 +1,53 @@
 #include "PTO2_for_BMS.hpp"
 #include "resource.h"
+#include "nlohmann/json_fwd.hpp"
+#include "nlohmann/json.hpp"
+
+//  BACKLIGHT FULL:		02 05 BF 00 00 03 49 00 FF 00 00 00 00 00
+//  BACKLIGHT OFF:		02 05 BF 00 00 03 49 00 00 00 00 00 00 00
+//  GEAR HANDLE BRIGHT:	02 05 BF 00 00 03 49 01 FF 00 00 00 00 00
+//  GEAR HANDLE OFF:	02 05 BF 00 00 03 49 01 00 00 00 00 00 00
+//  SL BRIGHT:			02 05 BF 00 00 03 49 02 FF 00 00 00 00 00
+//  SL DIM:				02 05 BF 00 00 03 49 02 00 00 00 00 00 00
+//  FLAG BRIGHT:		02 05 BF 00 00 03 49 03 FF 00 00 00 00 00
+//  FLAG BRIGHT:		02 05 BF 00 00 03 49 03 00 00 00 00 00 00
+//  MASTER CAUTION ON:	02 05 BF 00 00 03 49 04 01 00 00 00 00 00
+//  MASTER CAUTION OFF:	02 05 BF 00 00 03 49 04 00 00 00 00 00 00
+//  JETTISON ON:		02 05 BF 00 00 03 49 05 01 00 00 00 00 00
+//  JETTISON OFF:		02 05 BF 00 00 03 49 05 00 00 00 00 00 00
+//  CTR ON:				02 05 BF 00 00 03 49 06 01 00 00 00 00 00
+//  CTR OFF:			02 05 BF 00 00 03 49 06 00 00 00 00 00 00
+//  LI ON:				02 05 BF 00 00 03 49 07 01 00 00 00 00 00
+//  LI OFF:				02 05 BF 00 00 03 49 07 00 00 00 00 00 00
+//  LO ON:				02 05 BF 00 00 03 49 08 01 00 00 00 00 00
+//  LO OFF:				02 05 BF 00 00 03 49 08 00 00 00 00 00 00
+//  RO ON:				02 05 BF 00 00 03 49 09 01 00 00 00 00 00
+//  RO OFF:				02 05 BF 00 00 03 49 09 00 00 00 00 00 00
+//  RI ON:				02 05 BF 00 00 03 49 0A 01 00 00 00 00 00
+//  RI OFF:				02 05 BF 00 00 03 49 0A 00 00 00 00 00 00
+//  FLAPS ON:			02 05 BF 00 00 03 49 0B 01 00 00 00 00 00
+//  FLAPS OFF:			02 05 BF 00 00 03 49 0B 00 00 00 00 00 00
+//  NOSE ON:			02 05 BF 00 00 03 49 0C 01 00 00 00 00 00
+//  NOSE OFF:			02 05 BF 00 00 03 49 0C 00 00 00 00 00 00
+//  FULL ON:			02 05 BF 00 00 03 49 0D 01 00 00 00 00 00
+//  FULL OFF:			02 05 BF 00 00 03 49 0D 00 00 00 00 00 00
+//  RIGHT ON:			02 05 BF 00 00 03 49 0E 01 00 00 00 00 00
+//  RIGHT OFF:			02 05 BF 00 00 03 49 0E 00 00 00 00 00 00
+//  LEFT ON:			02 05 BF 00 00 03 49 0F 01 00 00 00 00 00
+//  LEFT OFF:			02 05 BF 00 00 03 49 0F 00 00 00 00 00 00
+//  HALF ON:			02 05 BF 00 00 03 49 10 01 00 00 00 00 00
+//  HALF OFF:			02 05 BF 00 00 03 49 10 00 00 00 00 00 00
+//  HOOK ON:			02 05 BF 00 00 03 49 11 01 00 00 00 00 00
+//  HOOK OFF:			02 05 BF 00 00 03 49 11 00 00 00 00 00 00
 
 Context g_context = {};
 
-enum PTO2_light : unsigned char {
-	/* Brightness has 256 values, from 0x00 to 0xff */
-	BACKLIGHT_BRIGHTNESS = 0x00,	// Brightness of panel backlight
-	GEAR_HANDLE_BRIGHTNESS,			// Gear handle has variable brightness, not on/off
-	SL_BRIGHTNESS,					// Buttons brightness (master caution, station select...)
-	FLAG_BRIGHTNESS,				// Flags brightness (NOSE/LEFT/RIGHT, HOOK...)
-	/* Light have two states, off and on, either 0x00 or 0x01.
-	Their brightness is controlled by SL or FLAG_BRIGHTNESS */
-	MASTER_CAUTION,
-	JETTISON,
-	STATION_CTR,
-	STATION_LI,
-	STATION_LO,
-	STATION_RO,
-	STATION_RI,
-	FLAPS,
-	NOSE,
-	FULL,
-	RIGHT,
-	LEFT,
-	HALF,
-	HOOK
-};
-
-bool	set_light(hid_device *device, PTO2_light light, bool set_on)
+/*
+* Set a light ON or OFF on Winwing PTO2.
+* This function writes arbitrary data to a HID device. You should NOT use it on something other
+* than a PTO2. Who knows what could happen?
+*/
+bool	set_PTO2_light(hid_device *device, PTO2LightID light, bool set_on)
 {
 	assert(!(light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS));
 	if (light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS)
@@ -35,14 +55,22 @@ bool	set_light(hid_device *device, PTO2_light light, bool set_on)
 
 	unsigned char max_bright = (light == GEAR_HANDLE_BRIGHTNESS ? 0xff : 0x01);
 	unsigned char brightness = (set_on ? max_bright : 0x00);
+	/* This is the HID packet that controls the PTO2 lights. You just change the light ID and
+	 * the brightness value. Send a 0 or 1 to turn on or off a light. The light's brightness is
+	 * controlled by a separate group brightness ID, and has 256 values (see enum comments for details).
+	 * The gear handle is an exception, it doesn't have an on/off state, instead it is directly
+	 * controlled by a brightness setting with values from 0x00 to 0xff, just like the other
+	 * brightness IDs.
+	 */
 	unsigned char send_buf[] = {
-		0x02, 0x05, 0xBF, 0x00,
-		0x00, 0x03, 0x49, light,
-		brightness, 0x00, 0x00, 0x00,
-		0x00, 0x00 };
+		0x02, 0x05, 0xBF, 0x00, 0x00, 0x03, 0x49, light,
+		brightness, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	return (hid_write(device, send_buf, sizeof(send_buf)) != -1);
 }
 
+/*
+* ImGui button with custom color. Calculates appropriate Hovered and Active colors.
+*/
 bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0))
 {
 	float h, s, v;
@@ -79,14 +107,14 @@ void	thread_routine()
 	while (g_context.thread_running)
 	{
 		bool success = true;
-		success = success && set_light(g_context.hid_device, MASTER_CAUTION, flight_data->IsSet(FlightData::MasterCaution));
-		success = success && set_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, flight_data->IsSet2(FlightData::GEARHANDLE));
-		success = success && set_light(g_context.hid_device, NOSE, flight_data->IsSet3(FlightData::NoseGearDown));
-		success = success && set_light(g_context.hid_device, LEFT, flight_data->IsSet3(FlightData::LeftGearDown));
-		success = success && set_light(g_context.hid_device, RIGHT, flight_data->IsSet3(FlightData::RightGearDown));
-		success = success && set_light(g_context.hid_device, HOOK, flight_data->IsSet(FlightData::Hook));
+		success = success && set_PTO2_light(g_context.hid_device, MASTER_CAUTION, flight_data->IsSet(FlightData::MasterCaution));
+		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, flight_data->IsSet2(FlightData::GEARHANDLE));
+		success = success && set_PTO2_light(g_context.hid_device, NOSE, flight_data->IsSet3(FlightData::NoseGearDown));
+		success = success && set_PTO2_light(g_context.hid_device, LEFT, flight_data->IsSet3(FlightData::LeftGearDown));
+		success = success && set_PTO2_light(g_context.hid_device, RIGHT, flight_data->IsSet3(FlightData::RightGearDown));
+		success = success && set_PTO2_light(g_context.hid_device, HOOK, flight_data->IsSet(FlightData::Hook));
 		if (!success)
-		{
+		{	// Failed HID write operation, most likely because device is disconnected: stop the thread.
 			g_context.thread_running = false;
 			g_context.require_device_reopen = true;
 		}
@@ -116,13 +144,17 @@ void    render_main_window(ImGuiIO& io)
 		g_context.require_device_reopen = false;
 	}
 
-	if (!g_context.hid_device && !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, NULL)))
+	// Opens the first WW PTO2 device that it finds. Don't handle multiple PTO2s connected
+	// at the same time: who the hell would do that?
+	if (!g_context.hid_device
+		&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
 	{
 		ImGui::Text("No Winwing PTO2 detected!");
 		goto end_window;
 	}
 
-	ImGui::TextWrapped("This small app is NOT made to run alongside SimAppPro. Rather, it is a complete replacement.");
+	ImGui::TextWrapped("This small app is NOT made to run alongside SimAppPro. "
+		"Rather, it is a complete replacement.");
 
 	if (g_context.thread_running)
 	{
@@ -140,6 +172,20 @@ void    render_main_window(ImGuiIO& io)
 			g_context.thread = std::jthread(&thread_routine);
 		}
 		set_window_icon(WINDOW_ICON_ID_RED);
+	}
+
+	if (ImGui::BeginCombo("Gear handle light", "", ImGuiComboFlags_PopupAlignLeft))
+	{
+		for (auto const &light : g_context.falcon_lights)
+		{
+			ImGui::Selectable(light.display_name.c_str());
+		}
+		ImGui::EndCombo();
+	}
+
+	for (auto const &light : g_context.falcon_lights)
+	{
+		ImGui::Text(light.display_name.c_str());
 	}
 
 end_window:

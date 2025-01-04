@@ -84,6 +84,7 @@
   <ItemGroup>
     <ClCompile Include="app_main.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
+    <ClCompile Include="falcon_light_data_list.cpp" />
     <ClCompile Include="hidapi\hid.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -92,8 +93,8 @@
     <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="imgui_style.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hidapi\hidapi.h" />
@@ -113,6 +114,8 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="include\FlightData.h" />
     <ClInclude Include="include\IVibeData.h" />
+    <ClInclude Include="include\nlohmann\json.hpp" />
+    <ClInclude Include="include\nlohmann\json_fwd.hpp" />
     <ClInclude Include="PTO2_for_BMS.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
