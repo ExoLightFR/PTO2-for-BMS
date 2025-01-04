@@ -264,8 +264,5 @@ void    render_main_window(ImGuiIO& io)
 	if (disable_editing)
 		ImGui::EndDisabled();
 
-	TextCentered("This small app is not made to run alongside SimAppPro.");
-	TextCentered("It is instead a complete replacement.");
-
 	ImGui::End();
 }

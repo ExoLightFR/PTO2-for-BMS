@@ -25,7 +25,7 @@ constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
 constexpr int				WIN_WIDTH = 610;
-constexpr int				WIN_HEIGHT = 585;
+constexpr int				WIN_HEIGHT = 543;
 constexpr unsigned short	PTO2_VENDOR_ID = 0x4098;
 constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
