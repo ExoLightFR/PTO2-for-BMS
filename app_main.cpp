@@ -69,23 +69,6 @@ bool	set_PTO2_light(hid_device *device, PTO2LightID light, bool set_on)
 }
 
 /*
-* ImGui button with custom color. Calculates appropriate Hovered and Active colors.
-*/
-bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0))
-{
-	float h, s, v;
-	ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
-
-	ImGui::PushStyleColor(ImGuiCol_Button,			(ImVec4)ImColor::HSV(h, s, v));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,	(ImVec4)ImColor::HSV(h, s + 0.1f, v + 0.1f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive,	(ImVec4)ImColor::HSV(h, s + 0.2f, v + 0.2f));
-	bool pressed = ImGui::Button(label, size);
-	ImGui::PopStyleColor(3);
-	
-	return pressed;
-}
-
-/*
 * Read Falcon's shared memory to check if associated PTO light should be turned on.
 */
 static bool	is_light_on(void *shared_mem, PTO2LightID PTO_light)
@@ -139,10 +122,6 @@ void	thread_routine()
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
-namespace ImGui {
-	bool ComboWithFilter(const char *label, int *current_item, const std::vector<std::string> &items, int popup_max_height_in_items = -1);
-}
-
 /*
 * Widget that allows selection of a Falcon light to bind to a PTO2 light. Returns whether user
 * has changed their selection or not.
@@ -156,11 +135,11 @@ static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 	bool disable_button = !PTO2_light_bind.has_value();
 	if (disable_button)
 		ImGui::BeginDisabled();
-
+	
 	ImGui::PushID(PTO_light_ID);
 	if (ColoredButton("Erase", { 172, 0, 0 }))
 	{
-		g_context.PTO2_light_assignment_map[PTO_light_ID].reset();
+		PTO2_light_bind.reset();
 		selection_changed = true;
 	}
 	ImGui::PopID();
@@ -180,7 +159,7 @@ static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 
 			if (ImGui::Selectable(light.display_name.c_str(), selected))
 			{
-				g_context.PTO2_light_assignment_map[PTO_light_ID] = light;
+				PTO2_light_bind = light;
 				// Only set to true if selected item is different from the one already selected
 				selection_changed = selection_changed || !selected;
 			}
@@ -193,13 +172,23 @@ static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 	return selection_changed;
 }
 
+void TextCentered(const char *text)
+{
+	auto windowWidth = ImGui::GetWindowSize().x;
+	auto textWidth = ImGui::CalcTextSize(text).x;
+
+	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+	ImGui::Text(text);
+}
+
 void    render_main_window(ImGuiIO& io)
 {
 	ImGui::SetNextWindowSize(io.DisplaySize);
 	ImGui::SetNextWindowPos({ 0, 0 });
 	constexpr ImGuiWindowFlags    flags = ImGuiWindowFlags_NoResize
 		| ImGuiWindowFlags_NoMove
-		| ImGuiWindowFlags_NoDecoration;
+		| ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoScrollWithMouse;
 	ImGui::GetStyle().WindowBorderSize = 0;
 	// Disable this to avoid highlighting issues with combo search box
 	io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
@@ -223,12 +212,9 @@ void    render_main_window(ImGuiIO& io)
 		return;
 	}
 
-	ImGui::TextWrapped("This small app is NOT made to run alongside SimAppPro. "
-		"Rather, it is a complete replacement.");
-
 	if (g_context.thread_running)
 	{
-		if (ColoredButton("Disconnect from BMS", { 172, 0, 0 }, { -1, 0 }))
+		if (ColoredButton("Disconnect from BMS", { 172, 0, 0 }, { -1, 50 }))
 		{
 			g_context.thread_running = false;
 			g_context.thread.join();
@@ -237,49 +223,49 @@ void    render_main_window(ImGuiIO& io)
 	}
 	else
 	{
-		if (ColoredButton("Connect to BMS", { 0, 172, 0 }, { -1, 0 }))
+		if (ColoredButton("Connect to BMS", { 0, 172, 0 }, { -1, 50 }))
 		{
 			g_context.thread = std::jthread(&thread_routine);
 		}
 		set_window_icon(WINDOW_ICON_ID_RED);
 	}
 
-	std::vector<std::string> test = {
-		"a", "b", "c", "d", "e", "f", "g", "h", "i", "dfsfds", "hgfhgf"
-	};
-	static int current = 0;
-	ImGui::ComboWithFilter("Foo", &current, test);
+	// Move ImGui cursor down slightly to add some padding below the button
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
 	bool disable_editing = g_context.thread_running;
 	if (disable_editing)
 		ImGui::BeginDisabled();
 
-	bool has_changed = false;
-	has_changed = has_changed || PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
-	has_changed = has_changed || PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
-	has_changed = has_changed || PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
+	int has_changed = 0;
+	has_changed |= (int)PTO2_light_assign_widget_v2("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	has_changed |= (int)PTO2_light_assign_widget_v2("Master caution", PTO2LightID::MASTER_CAUTION);
+	has_changed |= (int)PTO2_light_assign_widget_v2("HOOK light", PTO2LightID::HOOK);
 	
-	has_changed = has_changed || PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
-	has_changed = has_changed || PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
-	has_changed = has_changed || PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
+	has_changed |= (int)PTO2_light_assign_widget_v2("NOSE gear light", PTO2LightID::NOSE);
+	has_changed |= (int)PTO2_light_assign_widget_v2("LEFT gear light", PTO2LightID::LEFT);
+	has_changed |= (int)PTO2_light_assign_widget_v2("RIGHT gear light", PTO2LightID::RIGHT);
 
-	has_changed = has_changed || PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
-	has_changed = has_changed || PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
-	has_changed = has_changed || PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
+	has_changed |= (int)PTO2_light_assign_widget_v2("Flaps HALF light", PTO2LightID::HALF);
+	has_changed |= (int)PTO2_light_assign_widget_v2("Flaps FULL light", PTO2LightID::FULL);
+	has_changed |= (int)PTO2_light_assign_widget_v2("Yellow FLAPS light", PTO2LightID::FLAPS);
 	
-	has_changed = has_changed || PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
-	has_changed = has_changed || PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
-	has_changed = has_changed || PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
-	has_changed = has_changed || PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
-	has_changed = has_changed || PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
-	has_changed = has_changed || PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+	has_changed |= (int)PTO2_light_assign_widget_v2("JETT button", PTO2LightID::JETTISON);
+	has_changed |= (int)PTO2_light_assign_widget_v2("CTR station", PTO2LightID::STATION_CTR);
+	has_changed |= (int)PTO2_light_assign_widget_v2("LI station", PTO2LightID::STATION_LI);
+	has_changed |= (int)PTO2_light_assign_widget_v2("RI station", PTO2LightID::STATION_RI);
+	has_changed |= (int)PTO2_light_assign_widget_v2("LO station", PTO2LightID::STATION_LO);
+	has_changed |= (int)PTO2_light_assign_widget_v2("RO station", PTO2LightID::STATION_RO);
 
 	if (has_changed)
 		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);
 
 	if (disable_editing)
 		ImGui::EndDisabled();
+
+	TextCentered("This small app is not made to run alongside SimAppPro.");
+	TextCentered("It is instead a complete replacement.");
 
 	ImGui::End();
 }

@@ -10,11 +10,29 @@ ImGuiStyle	get_custom_imgui_style()
 	style.FrameRounding = 3;
 	// style.ItemSpacing.y = 6;
 	style.GrabRounding = 4;
+	style.PopupRounding = 3;
 
 	style.ScaleAllSizes(1.5f);
 	ImGui::StyleColorsDark(&style);
 
 	return style;
+}
+
+/*
+* ImGui button with custom color. Calculates appropriate Hovered and Active colors.
+*/
+bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0))
+{
+	float h, s, v;
+	ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
+
+	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(h, s, v));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(h, s + 0.1f, v + 0.1f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(h, s + 0.2f, v + 0.2f));
+	bool pressed = ImGui::Button(label, size);
+	ImGui::PopStyleColor(3);
+
+	return pressed;
 }
 
 /*

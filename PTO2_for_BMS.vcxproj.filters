@@ -57,7 +57,7 @@
     <ClCompile Include="conf_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="combo_widget.cpp">
+    <ClCompile Include="light_assign_widget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

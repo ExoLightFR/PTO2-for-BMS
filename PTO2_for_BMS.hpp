@@ -25,7 +25,7 @@ constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
 constexpr int				WIN_WIDTH = 610;
-constexpr int				WIN_HEIGHT = 560;
+constexpr int				WIN_HEIGHT = 585;
 constexpr unsigned short	PTO2_VENDOR_ID = 0x4098;
 constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
@@ -60,7 +60,7 @@ enum PTO2LightID : unsigned char {
 struct FalconLightData
 {
 	std::string	display_name;
-	std::string	search_name;
+	std::string	search_name;	// Unused. Meant to be a lowercase version of the display name.
 	struct LightID {
 		ptrdiff_t	offset;			// Offset in shared memory in which to read
 		int			light_bit;		// Light bit to check against
@@ -88,8 +88,12 @@ struct Context
 };
 
 ImGuiStyle		get_custom_imgui_style();
+bool			ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
 void			render_main_window(ImGuiIO &io);
 void			set_window_icon(int IDI_thing);
+
+bool			PTO2_light_assign_widget_v2(const char *label, PTO2LightID PTO_light_ID,
+					int popup_max_height_in_items = -1);
 
 Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);
 PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
@@ -101,6 +105,7 @@ int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &v
 
 /*
 * Enumeration of all cockpit data that can be checked by the app to synchronise a PTO2 light.
+* Unused (for now at least).
 */
 enum FalconPitData
 {

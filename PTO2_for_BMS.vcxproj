@@ -83,7 +83,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="app_main.cpp" />
-    <ClCompile Include="combo_widget.cpp" />
     <ClCompile Include="conf_file.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
     <ClCompile Include="falcon_light_data_list.cpp" />
@@ -95,6 +94,7 @@
     <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="light_assign_widget.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
