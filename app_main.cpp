@@ -139,6 +139,10 @@ void	thread_routine()
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
+namespace ImGui {
+	bool ComboWithFilter(const char *label, int *current_item, const std::vector<std::string> &items, int popup_max_height_in_items = -1);
+}
+
 /*
 * Widget that allows selection of a Falcon light to bind to a PTO2 light. Returns whether user
 * has changed their selection or not.
@@ -148,6 +152,7 @@ static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 	bool selection_changed = false;
 	auto &PTO2_light_bind = g_context.PTO2_light_assignment_map[PTO_light_ID];
 
+	// === ERASE BUTTON ===
 	bool disable_button = !PTO2_light_bind.has_value();
 	if (disable_button)
 		ImGui::BeginDisabled();
@@ -165,6 +170,7 @@ static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 	
 	ImGui::SameLine();
 
+	// === SELECTION COMBO ===
 	const char *preview = PTO2_light_bind ? PTO2_light_bind->display_name.c_str() : "";
 	if (ImGui::BeginCombo(light_name, preview, ImGuiComboFlags_PopupAlignLeft))
 	{
@@ -195,6 +201,8 @@ void    render_main_window(ImGuiIO& io)
 		| ImGuiWindowFlags_NoMove
 		| ImGuiWindowFlags_NoDecoration;
 	ImGui::GetStyle().WindowBorderSize = 0;
+	// Disable this to avoid highlighting issues with combo search box
+	io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
 	ImGui::Begin("main", nullptr, flags);
 
 	// No need to use atomic CAS here I think, nobody else would set require_device_reopen to false
@@ -235,6 +243,12 @@ void    render_main_window(ImGuiIO& io)
 		}
 		set_window_icon(WINDOW_ICON_ID_RED);
 	}
+
+	std::vector<std::string> test = {
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "dfsfds", "hgfhgf"
+	};
+	static int current = 0;
+	ImGui::ComboWithFilter("Foo", &current, test);
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
 	bool disable_editing = g_context.thread_running;

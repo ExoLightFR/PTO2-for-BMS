@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="app_main.cpp" />
+    <ClCompile Include="combo_widget.cpp" />
     <ClCompile Include="conf_file.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
     <ClCompile Include="falcon_light_data_list.cpp" />
@@ -114,6 +115,7 @@
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="include\FlightData.h" />
+    <ClInclude Include="include\fts_fuzzy_match.h" />
     <ClInclude Include="include\IVibeData.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />

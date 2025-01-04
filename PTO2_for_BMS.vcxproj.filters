@@ -57,6 +57,9 @@
     <ClCompile Include="conf_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="combo_widget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\FlightData.h">
@@ -120,6 +123,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\nlohmann\json_fwd.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fts_fuzzy_match.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
