@@ -207,7 +207,7 @@ void    render_main_window(ImGuiIO& io)
 	if (!g_context.hid_device
 		&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
 	{
-		ImGui::Text("No Winwing PTO2 detected!");
+		TextCentered("No Winwing PTO2 detected! :(");
 		ImGui::End();
 		return;
 	}
