@@ -139,8 +139,13 @@ void	thread_routine()
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
-static void	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_light_ID)
+/*
+* Widget that allows selection of a Falcon light to bind to a PTO2 light. Returns whether user
+* has changed their selection or not.
+*/
+static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_light_ID)
 {
+	bool selection_changed = false;
 	auto &PTO2_light_bind = g_context.PTO2_light_assignment_map[PTO_light_ID];
 
 	bool disable_button = !PTO2_light_bind.has_value();
@@ -149,7 +154,10 @@ static void	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 
 	ImGui::PushID(PTO_light_ID);
 	if (ColoredButton("Erase", { 172, 0, 0 }))
+	{
 		g_context.PTO2_light_assignment_map[PTO_light_ID].reset();
+		selection_changed = true;
+	}
 	ImGui::PopID();
 	
 	if (disable_button)
@@ -165,13 +173,18 @@ static void	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_lig
 			bool selected = PTO2_light_bind.has_value() && (PTO2_light_bind->ID == light.ID);
 
 			if (ImGui::Selectable(light.display_name.c_str(), selected))
+			{
 				g_context.PTO2_light_assignment_map[PTO_light_ID] = light;
+				// Only set to true if selected item is different from the one already selected
+				selection_changed = selection_changed || !selected;
+			}
 
 			if (selected)
 				ImGui::SetItemDefaultFocus();
 		}
 		ImGui::EndCombo();
 	}
+	return selection_changed;
 }
 
 void    render_main_window(ImGuiIO& io)
@@ -228,24 +241,28 @@ void    render_main_window(ImGuiIO& io)
 	if (disable_editing)
 		ImGui::BeginDisabled();
 
-	PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
-	PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
-	PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
+	bool has_changed = false;
+	has_changed = has_changed || PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	has_changed = has_changed || PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
+	has_changed = has_changed || PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
 	
-	PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
-	PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
-	PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
+	has_changed = has_changed || PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
+	has_changed = has_changed || PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
+	has_changed = has_changed || PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
 
-	PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
-	PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
-	PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
+	has_changed = has_changed || PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
+	has_changed = has_changed || PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
+	has_changed = has_changed || PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
 	
-	PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
-	PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
-	PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
-	PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
-	PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
-	PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+	has_changed = has_changed || PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
+	has_changed = has_changed || PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
+	has_changed = has_changed || PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
+	has_changed = has_changed || PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
+	has_changed = has_changed || PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
+	has_changed = has_changed || PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+
+	if (has_changed)
+		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);
 
 	if (disable_editing)
 		ImGui::EndDisabled();

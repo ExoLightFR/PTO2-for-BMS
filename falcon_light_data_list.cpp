@@ -20,7 +20,7 @@ inline FalconLightData	create_FalconLightData_struct(const char *name, int light
 	};
 }
 
-std::vector<FalconLightData>	get_falcon_light_data_list()
+std::vector<FalconLightData>	init_falcon_light_data_list()
 {
 	std::vector<FalconLightData>	retval{
 		create_FalconLightData_struct("Master Caution",					FlightData::LightBits::MasterCaution,	&flightData.lightBits),

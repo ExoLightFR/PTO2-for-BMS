@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="app_main.cpp" />
+    <ClCompile Include="conf_file.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
     <ClCompile Include="falcon_light_data_list.cpp" />
     <ClCompile Include="hidapi\hid.c" />

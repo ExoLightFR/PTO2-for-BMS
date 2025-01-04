@@ -8,13 +8,20 @@
 
 #include <Windows.h>
 
+#include "nlohmann/json_fwd.hpp"
+#include "nlohmann/json.hpp"
 #include "imgui.h"
 #include "hidapi.h"
 #include "FlightData.h"
 #include "resource.h"
 
+using Json = nlohmann::json;
+
 constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;
 constexpr int	WINDOW_ICON_ID_RED		= IDI_ICON2;
+
+constexpr const wchar_t		REG_BENCHMARKSIMS_PATH[] = L"SOFTWARE\\WOW6432Node\\Benchmark Sims\\";
+constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
 constexpr int				WIN_WIDTH = 610;
@@ -60,7 +67,10 @@ struct FalconLightData
 		bool operator==(LightID const &) const = default;
 	} ID;
 };
-std::vector<FalconLightData>	get_falcon_light_data_list();
+std::vector<FalconLightData>	init_falcon_light_data_list();
+
+using PTO2LightBinds = std::array< std::optional<FalconLightData>, HOOK + 1 >;
+PTO2LightBinds	init_PTO2_light_map_and_conf_file();
 
 struct Context
 {
@@ -72,14 +82,22 @@ struct Context
 	// Used in case of hid_write error.
 	std::atomic_bool	require_device_reopen = false;
 
-	const std::vector<FalconLightData>	falcon_lights = get_falcon_light_data_list();
+	const std::vector<FalconLightData>	falcon_lights = init_falcon_light_data_list();
 	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
-	std::array< std::optional<FalconLightData>, HOOK + 1 >	PTO2_light_assignment_map = {};
+	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
 };
 
-ImGuiStyle	get_custom_imgui_style();
-void		render_main_window(ImGuiIO &io);
-void		set_window_icon(int IDI_thing);
+ImGuiStyle		get_custom_imgui_style();
+void			render_main_window(ImGuiIO &io);
+void			set_window_icon(int IDI_thing);
+
+Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);
+PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
+void			serialize_PTO2_mapping_to_conf_file(PTO2LightBinds const &mapping);
+PTO2LightBinds	deserialize_conf_to_PTO2_mapping();
+
+std::wstring	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value);
+int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value, std::wstring &outstr);
 
 /*
 * Enumeration of all cockpit data that can be checked by the app to synchronise a PTO2 light.
