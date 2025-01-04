@@ -11,6 +11,8 @@
 
 Download the `.exe` from the releases, drop it wherever you want, and run it. That's it!
 
+**Windows defender might issue a warning.** That's normal! Click "More info" and "Run anyway". I can't pay a certificate to permanently avoid this warning. If you need proof that the software is safe, the source code is right there :)
+
 ## Configuration file
 
 The executable creates a `PTO2_for_BMS.conf` file in your BMS `/User/Config` directory. You shouldn't edit it yourself, but you can share it with your friends to exchange configurations. If you delete it, the app will restore a default config file with the basics assigned.
