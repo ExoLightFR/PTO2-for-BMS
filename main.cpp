@@ -72,6 +72,13 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		else
 			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 	}
+	/*
+	* This was a bit of a pain to research. Here are some resources I've used:
+	* https://www.codeproject.com/Articles/18783/Example-of-a-SysTray-App-in-Win32
+	* https://www.lotushints.com/2013/03/win32-hide-to-system-tray-part-1/ (also check out parts 2 & 3)
+	* https://www.oocities.org/technofundo/tech/win/SNIcon.html
+	* https://codingmisadventures.wordpress.com/2009/02/20/creating-a-system-tray-icon-using-visual-c-and-win32/
+	*/
 	case WM_TRAYICON: // Custom message for our tray icon
 	{
 		if (LOWORD(lParam) == WM_LBUTTONDBLCLK)
@@ -145,6 +152,15 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 // Main code
 int main(void)
 {
+	// Don't allow multiple instances, out of caution
+	if (FindWindowA(NULL, WIN_TITLE) != nullptr)
+	{
+		MessageBoxA(nullptr, "Another instance of this application is already running! "
+			"It might be minimized in your taskbar.",
+			"Whoops!", MB_OK | MB_ICONHAND | MB_SETFOREGROUND);
+		return 1;
+	}
+
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
 		return 1;
