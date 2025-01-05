@@ -8,6 +8,8 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include <windows.h>
+#include <WinUser.h>
+#include <shellapi.h>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -20,6 +22,8 @@
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h> // Will drag system OpenGL headers
+
+#include <thread>
 
 #include "resource.h"
 #include "PTO2_for_BMS.hpp"
@@ -39,6 +43,103 @@
 static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+/*
+* Static variables to access GLFW window and WndProc handles inside our own WndProc function.
+* This allows subclassing GLFW's WndProc function, so we can handle messages ourselves for
+* the system tray icon. See below.
+*/
+static WNDPROC		s_glfw_wndproc = nullptr;
+static GLFWwindow	*s_glfw_window = nullptr;
+
+/*
+* Write our own WndProc function that subclasses GLFW's. With this, we can handle our own custom events,
+* like the system tray icon messages, and let GLFW do everything else.
+*/
+LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch (uMsg)
+	{
+	case WM_SIZE:
+	{
+		if (wParam == SIZE_MINIMIZED)
+		{
+			// Hide the window with an animation (so user doesn't think it crashed or quit)
+			AnimateWindow(hWnd, 100, AW_HIDE | AW_SLIDE | AW_VER_NEGATIVE);
+			return FALSE;
+		}
+		else
+			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+	}
+	case WM_TRAYICON: // Custom message for our tray icon
+	{
+		if (LOWORD(lParam) == WM_LBUTTONDBLCLK)
+		{
+			ShowWindow(hWnd, SW_RESTORE);
+			SetForegroundWindow(hWnd);
+			SetFocus(hWnd);
+			return TRUE;
+		}
+		else if (LOWORD(lParam) == WM_RBUTTONUP)
+		{
+			POINT clickPoint = {};
+			UINT_PTR id = 123;
+
+			UINT flags = MF_BYPOSITION | MF_STRING;
+			GetCursorPos(&clickPoint);
+			HMENU menu = CreatePopupMenu();
+
+			UINT connected_flag = (g_context.thread_running ? MF_CHECKED : MF_UNCHECKED);
+			InsertMenuA(menu, 0xFFFFFFFF, flags | connected_flag, ID_TRAY_MENU_CONNECT, "Connect to BMS");
+			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_MINIMIZE, "Minimize to tray");
+			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_SEPARATOR, NULL);
+			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_QUIT, "Quit");
+
+			// Makes the connect option bold
+			SetMenuDefaultItem(menu, ID_TRAY_MENU_CONNECT, FALSE);
+			
+			// This is annoying, but without this the menu doesn't disappear when clicking outside it.
+			// Just a Win32 limitation, I guess? The TrackIR software has the same problem.
+			SetForegroundWindow(hWnd);
+			TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_BOTTOMALIGN,
+				clickPoint.x, clickPoint.y, 0, hWnd, NULL);
+			return TRUE;
+		}
+		else
+			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+	}
+	case WM_COMMAND:
+	{
+		WORD ID = LOWORD(wParam);
+		WORD event = HIWORD(wParam);
+		switch (ID)
+		{
+		case ID_TRAY_MENU_CONNECT:
+		{
+			if (g_context.thread_running) {
+				g_context.thread_running = false;
+				g_context.thread.join();
+			}
+			else
+				g_context.thread = std::jthread(&thread_routine);
+			break;
+		}
+		case ID_TRAY_MENU_MINIMIZE:
+			ShowWindow(hWnd, SW_HIDE);
+			break;
+		case ID_TRAY_MENU_QUIT:
+			glfwSetWindowShouldClose(s_glfw_window, GLFW_TRUE);
+			break;
+		default:
+			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+		}
+		return TRUE;
+	}
+	default:
+		// Subclass GLFW's window processing handler
+		return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+	}
 }
 
 // Main code
@@ -77,15 +178,14 @@ int main(void)
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
-	// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);	// Disable window resizing entirely
-
 	// Create window with graphics context
 	GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
+	s_glfw_window = window;
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
-	// ALlow window resizing but set minimum to never crop content
+	// Allow window resizing but set minimum to never crop content
 	glfwSetWindowSizeLimits(window, WIN_WIDTH, WIN_HEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	// Setup Dear ImGui context
@@ -109,29 +209,16 @@ int main(void)
 #endif
 	ImGui_ImplOpenGL3_Init(glsl_version);
 
+	// Init icons to red because app is not connected on startup
 	set_window_icon(WINDOW_ICON_ID_RED);
+	add_tray_icon(WINDOW_ICON_ID_RED);
 
-	// Load Fonts
-	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-	// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-	// - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-	// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-	// - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-	// - Read 'docs/FONTS.md' for more instructions and details.
-	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-	// - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-	//io.Fonts->AddFontDefault();
-	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-	//IM_ASSERT(font != nullptr);
-
-	// Our state
-	bool show_demo_window = true;
-	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	// Set custom WndProc handler so we can subclass GLFW's
+	HWND hWnd = glfwGetWin32Window(window);
+	s_glfw_wndproc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
+	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
 	// Main loop
 #ifdef __EMSCRIPTEN__
@@ -143,13 +230,19 @@ int main(void)
 	while (!glfwWindowShouldClose(window))
 #endif
 	{
+		// Update the system tray icon based on connection status
+		int icon_id = (g_context.thread_running ? WINDOW_ICON_ID_GREEN : WINDOW_ICON_ID_RED);
+		change_tray_icon(icon_id);
+
 		// Poll and handle events (inputs, window resize, etc.)
 		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
 		// - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
 		// - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
 		// Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
 		glfwPollEvents();
-		if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
+
+		// Give CPU cycles back when window is minimized or hidden (to tray, other desktop...)
+		if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0 || !(GetWindowLong(hWnd, GWL_STYLE) & WS_VISIBLE))
 		{
 			ImGui_ImplGlfw_Sleep(10);
 			continue;
@@ -171,7 +264,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		// Dirty (good?) trick to give CPU cycles back when we're not focused
+		// Dirty (good?) trick to give CPU cycles back when window is not focused
 		if (!glfwGetWindowAttrib(window, GLFW_FOCUSED))
 			ImGui_ImplGlfw_Sleep(10);
 
@@ -181,6 +274,12 @@ int main(void)
 	EMSCRIPTEN_MAINLOOP_END;
 #endif
 
+	if (g_context.thread_running) // Clean thread exit
+	{
+		g_context.thread_running = false;
+		g_context.thread.join();
+	}
+
 	hid_close(g_context.hid_device);
 	hid_exit();
 
@@ -188,6 +287,8 @@ int main(void)
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+
+	remove_tray_icon();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

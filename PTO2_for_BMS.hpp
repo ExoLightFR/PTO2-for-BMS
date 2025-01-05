@@ -20,6 +20,16 @@ using Json = nlohmann::json;
 constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;
 constexpr int	WINDOW_ICON_ID_RED		= IDI_ICON2;
 
+// Unique ID for the system tray icon.
+constexpr UINT	NOTIFY_ICON_DATA_ID		= 42;
+// Message ID for custom event in WndProc, in this case, for our system tray icon messages
+constexpr UINT	WM_TRAYICON				= WM_USER + 1;
+// System tray icon -> popup menu element IDs
+constexpr WORD	ID_TRAY_MENU_QUIT		= 1;
+constexpr WORD	ID_TRAY_MENU_SEPARATOR	= 2;
+constexpr WORD	ID_TRAY_MENU_CONNECT	= 3;
+constexpr WORD	ID_TRAY_MENU_MINIMIZE	= 4;
+
 constexpr const wchar_t		REG_BENCHMARKSIMS_PATH[] = L"SOFTWARE\\WOW6432Node\\Benchmark Sims\\";
 constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
 
@@ -88,8 +98,8 @@ struct Context
 };
 
 ImGuiStyle		get_custom_imgui_style();
+void			thread_routine();
 void			render_main_window(ImGuiIO &io);
-void			set_window_icon(int IDI_thing);
 
 // ImGui custom widgets
 bool			ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
@@ -103,7 +113,11 @@ PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
 void			serialize_PTO2_mapping_to_conf_file(PTO2LightBinds const &mapping);
 PTO2LightBinds	deserialize_conf_to_PTO2_mapping();
 
-// Windows registry utils
+// Win32 utils, stuff like window/system tray icon, registry...
+void			set_window_icon(int IDI_thing);
+void			add_tray_icon(int IDI_thingy);
+void			change_tray_icon(int IDI_thingy);
+void			remove_tray_icon();
 std::wstring	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value);
 int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value, std::wstring &outstr);
 

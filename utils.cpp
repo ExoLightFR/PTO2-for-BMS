@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <Windows.h>
 #include "imgui.h"
+#include "PTO2_for_BMS.hpp"
 
 ImGuiStyle	get_custom_imgui_style()
 {
@@ -21,7 +22,7 @@ ImGuiStyle	get_custom_imgui_style()
 /*
 * ImGui button with custom color. Calculates appropriate Hovered and Active colors.
 */
-bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0))
+bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size)
 {
 	float h, s, v;
 	ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
@@ -60,6 +61,73 @@ void		set_window_icon(int IDI_thing)
 	HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_thing));
 	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+}
+
+/*
+* Add the app's system tray icon. Only call when no icon is present! Otherwise, call
+* change_tray_icon().
+*/
+void	add_tray_icon(int IDI_thingy)
+{
+	HMODULE hInstance = GetModuleHandleA(NULL);
+
+	NOTIFYICONDATAA iconData = { 0 };
+	iconData.cbSize = sizeof(iconData);
+	iconData.hWnd = GetActiveWindow();
+	iconData.uID = NOTIFY_ICON_DATA_ID;
+	iconData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	iconData.hIcon = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_thingy));
+	iconData.uCallbackMessage = WM_TRAYICON;
+	memcpy(iconData.szTip, WIN_TITLE, sizeof(WIN_TITLE));
+	Shell_NotifyIconA(NIM_ADD, &iconData);
+}
+
+/*
+* Change the system tray icon.
+*/
+void	change_tray_icon(int IDI_thingy)
+{
+	HMODULE hInstance = GetModuleHandleA(NULL);
+
+	NOTIFYICONDATAA iconData = { 0 };
+	iconData.cbSize = sizeof(iconData);
+	iconData.hWnd = GetActiveWindow();
+	iconData.uID = NOTIFY_ICON_DATA_ID;
+	iconData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	iconData.hIcon = LoadIconA(hInstance, MAKEINTRESOURCEA(IDI_thingy));
+	iconData.uCallbackMessage = WM_TRAYICON;
+	memcpy(iconData.szTip, WIN_TITLE, sizeof(WIN_TITLE));
+	Shell_NotifyIconA(NIM_MODIFY, &iconData);
+}
+
+/*
+* Remove the system tray icon.
+*/
+void	remove_tray_icon()
+{
+	NOTIFYICONDATAA iconData = { 0 };
+	iconData.cbSize = sizeof(iconData);
+	iconData.hWnd = GetActiveWindow();
+	iconData.uID = NOTIFY_ICON_DATA_ID;
+	Shell_NotifyIconA(NIM_DELETE, &iconData);
+}
+
+/*
+* Set the window's minimum size based on desired client area, NOT full window size!
+* Unused because I figured out subclassing, but I'll keep it herebecause it's a useful trick.
+*/
+static void	set_Win32_min_window_size(HWND hWnd, MINMAXINFO *mmi, int min_width, int min_height)
+{
+	// Get window styles
+	LONG style = GetWindowLong(hWnd, GWL_STYLE);
+	LONG exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
+	// Calculate required window size for desired client area
+	RECT window_size = { 0, 0, WIN_WIDTH, WIN_HEIGHT };
+	AdjustWindowRectEx(&window_size, style, FALSE, exStyle);
+	// Set window size to client area + window decorations.
+	// GLFW asks for client area, Win32 asks for window area (client + decorations)
+	mmi->ptMinTrackSize.x = window_size.right - window_size.left;
+	mmi->ptMinTrackSize.y = window_size.bottom - window_size.top;
 }
 
 std::wstring RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value)
