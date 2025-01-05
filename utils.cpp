@@ -36,6 +36,18 @@ bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2
 }
 
 /*
+* ImGui text that's centered across the ImGui window.
+*/
+void	TextCentered(const char *text)
+{
+	float windowWidth = ImGui::GetWindowSize().x;
+	float textWidth = ImGui::CalcTextSize(text).x;
+
+	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+	ImGui::Text(text);
+}
+
+/*
 * Set the window's icon with the Win32 API. Icon has to be a resource thingy in Visual Studio.
 * Don't use GLFW: for once, it's easier to use the Win32 API...
 */

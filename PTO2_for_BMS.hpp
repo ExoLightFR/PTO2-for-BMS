@@ -88,18 +88,22 @@ struct Context
 };
 
 ImGuiStyle		get_custom_imgui_style();
-bool			ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
 void			render_main_window(ImGuiIO &io);
 void			set_window_icon(int IDI_thing);
 
-bool			PTO2_light_assign_widget_v2(const char *label, PTO2LightID PTO_light_ID,
+// ImGui custom widgets
+bool			ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
+void			TextCentered(const char *text);
+bool			PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID,
 					int popup_max_height_in_items = -1);
 
+// Serialisation for JSON config file
 Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);
 PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
 void			serialize_PTO2_mapping_to_conf_file(PTO2LightBinds const &mapping);
 PTO2LightBinds	deserialize_conf_to_PTO2_mapping();
 
+// Windows registry utils
 std::wstring	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value);
 int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value, std::wstring &outstr);
 

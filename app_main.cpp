@@ -47,7 +47,7 @@ Context g_context = {};
 * This function writes arbitrary data to a HID device. You should NOT use it on something other
 * than a PTO2. Who knows what could happen?
 */
-bool	set_PTO2_light(hid_device *device, PTO2LightID light, bool set_on)
+static bool	set_PTO2_light(hid_device *device, PTO2LightID light, bool set_on)
 {
 	assert(!(light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS));
 	if (light < MASTER_CAUTION && light != GEAR_HANDLE_BRIGHTNESS)
@@ -85,20 +85,16 @@ void	thread_routine()
 {
 	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
 	if (!file_map_handle)
-	{
-		printf("OpenFileMapping failed\n");
 		return;
-	}
+
 	LPVOID bms_shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
 	const FlightData *flight_data = reinterpret_cast<FlightData *>(bms_shared_mem);
 	if (!flight_data)
 	{
-		printf("MapViewOfFile failed\n");
 		UnmapViewOfFile(bms_shared_mem);
 		return;
 	}
 
-	printf("Ready!\n");
 	g_context.thread_running = true;
 	while (g_context.thread_running)
 	{
@@ -120,65 +116,6 @@ void	thread_routine()
 	UnmapViewOfFile(bms_shared_mem);
 	CloseHandle(file_map_handle);
 	set_window_icon(WINDOW_ICON_ID_RED);
-}
-
-/*
-* Widget that allows selection of a Falcon light to bind to a PTO2 light. Returns whether user
-* has changed their selection or not.
-*/
-static bool	PTO2_light_assign_widget(const char *light_name, PTO2LightID PTO_light_ID)
-{
-	bool selection_changed = false;
-	auto &PTO2_light_bind = g_context.PTO2_light_assignment_map[PTO_light_ID];
-
-	// === ERASE BUTTON ===
-	bool disable_button = !PTO2_light_bind.has_value();
-	if (disable_button)
-		ImGui::BeginDisabled();
-	
-	ImGui::PushID(PTO_light_ID);
-	if (ColoredButton("Erase", { 172, 0, 0 }))
-	{
-		PTO2_light_bind.reset();
-		selection_changed = true;
-	}
-	ImGui::PopID();
-	
-	if (disable_button)
-		ImGui::EndDisabled();
-	
-	ImGui::SameLine();
-
-	// === SELECTION COMBO ===
-	const char *preview = PTO2_light_bind ? PTO2_light_bind->display_name.c_str() : "";
-	if (ImGui::BeginCombo(light_name, preview, ImGuiComboFlags_PopupAlignLeft))
-	{
-		for (auto const &light : g_context.falcon_lights)
-		{
-			bool selected = PTO2_light_bind.has_value() && (PTO2_light_bind->ID == light.ID);
-
-			if (ImGui::Selectable(light.display_name.c_str(), selected))
-			{
-				PTO2_light_bind = light;
-				// Only set to true if selected item is different from the one already selected
-				selection_changed = selection_changed || !selected;
-			}
-
-			if (selected)
-				ImGui::SetItemDefaultFocus();
-		}
-		ImGui::EndCombo();
-	}
-	return selection_changed;
-}
-
-void TextCentered(const char *text)
-{
-	auto windowWidth = ImGui::GetWindowSize().x;
-	auto textWidth = ImGui::CalcTextSize(text).x;
-
-	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-	ImGui::Text(text);
 }
 
 void    render_main_window(ImGuiIO& io)
@@ -238,25 +175,27 @@ void    render_main_window(ImGuiIO& io)
 	if (disable_editing)
 		ImGui::BeginDisabled();
 
+	// Don't use a boolean! Doing changed = changed || PTO2_light_assign_widget(...) shorts the rest
+	// of the calls to the widget functions, which creates a visual glitch as the combos don't get rendered.
 	int has_changed = 0;
-	has_changed |= (int)PTO2_light_assign_widget_v2("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
-	has_changed |= (int)PTO2_light_assign_widget_v2("Master caution", PTO2LightID::MASTER_CAUTION);
-	has_changed |= (int)PTO2_light_assign_widget_v2("HOOK light", PTO2LightID::HOOK);
+	has_changed |= (int)PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	has_changed |= (int)PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
+	has_changed |= (int)PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
 	
-	has_changed |= (int)PTO2_light_assign_widget_v2("NOSE gear light", PTO2LightID::NOSE);
-	has_changed |= (int)PTO2_light_assign_widget_v2("LEFT gear light", PTO2LightID::LEFT);
-	has_changed |= (int)PTO2_light_assign_widget_v2("RIGHT gear light", PTO2LightID::RIGHT);
+	has_changed |= (int)PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
+	has_changed |= (int)PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
+	has_changed |= (int)PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
 
-	has_changed |= (int)PTO2_light_assign_widget_v2("Flaps HALF light", PTO2LightID::HALF);
-	has_changed |= (int)PTO2_light_assign_widget_v2("Flaps FULL light", PTO2LightID::FULL);
-	has_changed |= (int)PTO2_light_assign_widget_v2("Yellow FLAPS light", PTO2LightID::FLAPS);
+	has_changed |= (int)PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
+	has_changed |= (int)PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
+	has_changed |= (int)PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
 	
-	has_changed |= (int)PTO2_light_assign_widget_v2("JETT button", PTO2LightID::JETTISON);
-	has_changed |= (int)PTO2_light_assign_widget_v2("CTR station", PTO2LightID::STATION_CTR);
-	has_changed |= (int)PTO2_light_assign_widget_v2("LI station", PTO2LightID::STATION_LI);
-	has_changed |= (int)PTO2_light_assign_widget_v2("RI station", PTO2LightID::STATION_RI);
-	has_changed |= (int)PTO2_light_assign_widget_v2("LO station", PTO2LightID::STATION_LO);
-	has_changed |= (int)PTO2_light_assign_widget_v2("RO station", PTO2LightID::STATION_RO);
+	has_changed |= (int)PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
+	has_changed |= (int)PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
+	has_changed |= (int)PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
+	has_changed |= (int)PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
+	has_changed |= (int)PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
+	has_changed |= (int)PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
 
 	if (has_changed)
 		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);

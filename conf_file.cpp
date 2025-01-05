@@ -47,6 +47,7 @@ PTO2LightBinds	json_to_PTO2_mapping(Json const &conf)
 			if (value.at("offset").type() != Json::value_t::number_unsigned
 				|| value.at("light_bit").type() != Json::value_t::number_unsigned)
 			{
+				// Just continue in case of error, item will be an empty optional
 				continue;
 			}
 			FalconLightData::LightID lightID = {
@@ -67,12 +68,19 @@ PTO2LightBinds	json_to_PTO2_mapping(Json const &conf)
 	return mapping;
 }
 
+/*
+* Get the path of the configuration file. The conf file is located in the BMS /User/Config,
+* or in the current working directory if a valid BMS install is not found.
+* The function looks for BMS installs in the Windows registry, and uses the most recent BMS
+* version found (e.g. if 4.36 & 4.37 are both installed, it will return path to 4.27/User/Config).
+*/
 static std::filesystem::path	get_conf_file_path()
 {
 	namespace fs = std::filesystem;
 
 	const wchar_t *possible_BMS_installs[] = {
-		L"Falcon BMS 4.38",	// Inshallah this will be future proof
+		L"Falcon BMS 4.39",	// Inshallah this will be future proof
+		L"Falcon BMS 4.38", // Soon™
 		L"Falcon BMS 4.37",
 		L"Falcon BMS 4.36",
 	};
@@ -84,11 +92,14 @@ static std::filesystem::path	get_conf_file_path()
 		if (RegGetString(HKEY_LOCAL_MACHINE, (bms_reg_path_prefix + suffix).c_str(), L"baseDir",
 			bms_root) == 0)
 		{
-			fs::path conf_path = bms_root;
 			// This API looks cool, until you actually use it. God dammit, C++ committee.
-			conf_path = conf_path / "User" / "Config" / CONF_FILE_NAME;
-			OutputDebugStringW(conf_path.native().c_str());
-			return conf_path;
+			fs::path conf_path = bms_root;
+			conf_path = conf_path / "User" / "Config";
+			// Go for BMS User/Config if it exists, otherwise use PWD as backup
+			if (fs::is_directory(conf_path))
+				return conf_path / CONF_FILE_NAME;
+			else
+				return fs::current_path() / CONF_FILE_NAME;
 		}
 	}
 	// Nothing, use working directory
@@ -119,39 +130,39 @@ PTO2LightBinds	deserialize_conf_to_PTO2_mapping()
 */
 static const char *DEFAULT_PTO2_JSON_CONF = R"(
 {
-    "1": {
-        "light_bit": 1073741824,
-        "offset": 124
-    },
-    "10": null,
-    "11": null,
-    "12": {
-        "light_bit": 65536,
-        "offset": 128
-    },
-    "13": null,
-    "14": {
-        "light_bit": 262144,
-        "offset": 128
-    },
-    "15": {
-        "light_bit": 131072,
-        "offset": 128
-    },
-    "16": null,
-    "17": {
-        "light_bit": 134217728,
-        "offset": 108
-    },
-    "4": {
-        "light_bit": 1,
-        "offset": 108
-    },
-    "5": null,
-    "6": null,
-    "7": null,
-    "8": null,
-    "9": null
+	"1": {
+		"light_bit": 1073741824,
+		"offset": 124
+	},
+	"10": null,
+	"11": null,
+	"12": {
+		"light_bit": 65536,
+		"offset": 128
+	},
+	"13": null,
+	"14": {
+		"light_bit": 262144,
+		"offset": 128
+	},
+	"15": {
+		"light_bit": 131072,
+		"offset": 128
+	},
+	"16": null,
+	"17": {
+		"light_bit": 134217728,
+		"offset": 108
+	},
+	"4": {
+		"light_bit": 1,
+		"offset": 108
+	},
+	"5": null,
+	"6": null,
+	"7": null,
+	"8": null,
+	"9": null
 }
 )";
 

@@ -59,7 +59,7 @@ static int	get_index_of_selected_item(std::optional<FalconLightData> const &PTO2
 	return -1;
 }
 
-bool	PTO2_light_assign_widget_v2(const char *label, PTO2LightID PTO_light_ID, int popup_max_height_in_items /*= -1 */)
+bool	PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID, int popup_max_height_in_items /*= -1 */)
 {
 	using namespace fts;
 
