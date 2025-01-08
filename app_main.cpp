@@ -118,13 +118,54 @@ void	thread_routine()
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
+namespace widgets {
+	static void	connect_button()
+	{
+		float height = ImGui::GetFrameHeight() * 2.0f;
+
+		// Opens the first WW PTO2 device that it finds. Don't handle multiple PTO2s connected
+		// at the same time: who the hell would do that?
+		if (!g_context.hid_device
+			&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
+		{
+			// No PTO2 device found, don't allow connection to BMS
+			ImGui::BeginDisabled();
+			ColoredButton("No Winwing PTO2 found", { 127, 127, 127 }, { -1, height });
+			ImGui::EndDisabled();
+		}
+		else
+		{
+			// PTO2 has been found
+			if (g_context.thread_running)
+			{
+				if (ColoredButton("Disconnect from BMS", { 172, 0, 0 }, { -1, height }))
+				{
+					g_context.thread_running = false;
+					g_context.thread.join();
+				}
+				set_window_icon(WINDOW_ICON_ID_GREEN);
+			}
+			else
+			{
+				if (ColoredButton("Connect to BMS", { 0, 172, 0 }, { -1, height }))
+				{
+					g_context.thread = std::jthread(&thread_routine);
+				}
+				set_window_icon(WINDOW_ICON_ID_RED);
+			}
+		}
+		// Add some empty spacing
+		ImGui::Spacing();
+	}
+}
+
+
 void    render_main_window(ImGuiIO& io)
 {
 	ImGui::SetNextWindowSize(io.DisplaySize);
 	ImGui::SetNextWindowPos({ 0, 0 });
-	constexpr ImGuiWindowFlags    flags = ImGuiWindowFlags_NoResize
+	constexpr ImGuiWindowFlags    flags = ImGuiWindowFlags_NoDecoration
 		| ImGuiWindowFlags_NoMove
-		| ImGuiWindowFlags_NoDecoration
 		| ImGuiWindowFlags_NoScrollWithMouse;
 	ImGui::GetStyle().WindowBorderSize = 0;
 	// Disable this to avoid highlighting issues with combo search box
@@ -139,36 +180,7 @@ void    render_main_window(ImGuiIO& io)
 		g_context.require_device_reopen = false;
 	}
 
-	// Opens the first WW PTO2 device that it finds. Don't handle multiple PTO2s connected
-	// at the same time: who the hell would do that?
-	if (!g_context.hid_device
-		&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
-	{
-		TextCentered("No Winwing PTO2 detected! :(");
-		ImGui::End();
-		return;
-	}
-
-	if (g_context.thread_running)
-	{
-		if (ColoredButton("Disconnect from BMS", { 172, 0, 0 }, { -1, 50 }))
-		{
-			g_context.thread_running = false;
-			g_context.thread.join();
-		}
-		set_window_icon(WINDOW_ICON_ID_GREEN);
-	}
-	else
-	{
-		if (ColoredButton("Connect to BMS", { 0, 172, 0 }, { -1, 50 }))
-		{
-			g_context.thread = std::jthread(&thread_routine);
-		}
-		set_window_icon(WINDOW_ICON_ID_RED);
-	}
-
-	// Move ImGui cursor down slightly to add some padding below the button
-	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5.0f);
+	widgets::connect_button();
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
 	bool disable_editing = g_context.thread_running;
@@ -178,24 +190,24 @@ void    render_main_window(ImGuiIO& io)
 	// Don't use a boolean! Doing changed = changed || PTO2_light_assign_widget(...) shorts the rest
 	// of the calls to the widget functions, which creates a visual glitch as the combos don't get rendered.
 	int has_changed = 0;
-	has_changed |= (int)PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
-	has_changed |= (int)PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
-	has_changed |= (int)PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
 	
-	has_changed |= (int)PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
-	has_changed |= (int)PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
-	has_changed |= (int)PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
 
-	has_changed |= (int)PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
-	has_changed |= (int)PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
-	has_changed |= (int)PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
 	
-	has_changed |= (int)PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
-	has_changed |= (int)PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
-	has_changed |= (int)PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
-	has_changed |= (int)PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
-	has_changed |= (int)PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
-	has_changed |= (int)PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
+	has_changed |= (int)widgets::PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
 
 	if (has_changed)
 		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);

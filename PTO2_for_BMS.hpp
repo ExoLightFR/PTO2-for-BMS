@@ -97,15 +97,17 @@ struct Context
 	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
 };
 
-ImGuiStyle		get_custom_imgui_style();
+ImGuiStyle		get_custom_imgui_style(float scale_factor = NAN);
 void			thread_routine();
 void			render_main_window(ImGuiIO &io);
 
 // ImGui custom widgets
-bool			ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
-void			TextCentered(const char *text);
-bool			PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID,
-					int popup_max_height_in_items = -1);
+namespace widgets {
+	bool		ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
+	void		TextCentered(const char *text);
+	bool		PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID,
+		int popup_max_height_in_items = -1);
+}
 
 // Serialisation for JSON config file
 Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);

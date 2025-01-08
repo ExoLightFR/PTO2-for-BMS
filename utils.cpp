@@ -4,7 +4,7 @@
 #include "imgui.h"
 #include "PTO2_for_BMS.hpp"
 
-ImGuiStyle	get_custom_imgui_style()
+ImGuiStyle	get_custom_imgui_style(float scale_factor)
 {
 	ImGuiStyle	style = ImGui::GetStyle();
 
@@ -16,37 +16,43 @@ ImGuiStyle	get_custom_imgui_style()
 	style.ScaleAllSizes(1.5f);
 	ImGui::StyleColorsDark(&style);
 
+	//style.ScaleAllSizes(scale_factor);
+
 	return style;
 }
 
-/*
-* ImGui button with custom color. Calculates appropriate Hovered and Active colors.
-*/
-bool	ColoredButton(const char *label, ImColor color, const ImVec2 &size)
-{
-	float h, s, v;
-	ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
+namespace widgets {
 
-	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(h, s, v));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(h, s + 0.1f, v + 0.1f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(h, s + 0.2f, v + 0.2f));
-	bool pressed = ImGui::Button(label, size);
-	ImGui::PopStyleColor(3);
+	/*
+	* ImGui button with custom color. Calculates appropriate Hovered and Active colors.
+	*/
+	bool	ColoredButton(const char* label, ImColor color, const ImVec2& size)
+	{
+		float h, s, v;
+		ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
 
-	return pressed;
-}
+		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(h, s, v));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(h, s + 0.1f, v + 0.1f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(h, s + 0.2f, v + 0.2f));
+		bool pressed = ImGui::Button(label, size);
+		ImGui::PopStyleColor(3);
 
-/*
-* ImGui text that's centered across the ImGui window.
-*/
-void	TextCentered(const char *text)
-{
-	float windowWidth = ImGui::GetWindowSize().x;
-	float textWidth = ImGui::CalcTextSize(text).x;
+		return pressed;
+	}
 
-	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-	ImGui::Text(text);
-}
+	/*
+	* ImGui text that's centered across the ImGui window.
+	*/
+	void	TextCentered(const char* text)
+	{
+		float windowWidth = ImGui::GetWindowSize().x;
+		float textWidth = ImGui::CalcTextSize(text).x;
+
+		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+		ImGui::Text(text);
+	}
+
+}	// namespace widgets
 
 /*
 * Set the window's icon with the Win32 API. Icon has to be a resource thingy in Visual Studio.
