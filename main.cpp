@@ -195,14 +195,21 @@ int main(void)
 #endif
 
 	// Create window with graphics context
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 	GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
 	s_glfw_window = window;
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
-	// Allow window resizing but set minimum to never crop content
-	glfwSetWindowSizeLimits(window, WIN_WIDTH, WIN_HEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
+	/*
+	* Allow window resizing but set minimum size to never crop content.
+	* Get the window size first then set it as a limit: this takes into account GLFW's
+	* rescaling of the window from the screen's DPIs (GLFW_SCALE_TO_MONITOR set to true)
+	*/
+	int win_width, win_height;
+	glfwGetWindowSize(window, &win_width, &win_height);
+	glfwSetWindowSizeLimits(window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -215,8 +222,19 @@ int main(void)
 	// Setup Dear ImGui style
 	//ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
+	
+	// Set custom WndProc handler so we can subclass GLFW's
+	HWND hWnd = glfwGetWin32Window(window);
+	s_glfw_wndproc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
+	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+	
+	// Set ImGui scale based on the screen's scaling factor (DPIs)
 	ImGui::GetStyle() = get_custom_imgui_style();
-	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85, 17);
+	UINT win_dpi = GetDpiForWindow(hWnd);
+	float scale_factor = (float)win_dpi / USER_DEFAULT_SCREEN_DPI;
+	ImGui::GetStyle().ScaleAllSizes(scale_factor);
+
+	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85, static_cast<int>(17 * scale_factor));
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -230,11 +248,6 @@ int main(void)
 	add_tray_icon(WINDOW_ICON_ID_RED);
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-	// Set custom WndProc handler so we can subclass GLFW's
-	HWND hWnd = glfwGetWin32Window(window);
-	s_glfw_wndproc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
-	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 
 	// Main loop
 #ifdef __EMSCRIPTEN__
