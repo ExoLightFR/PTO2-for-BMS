@@ -3,11 +3,12 @@
 #include <Windows.h>
 #include <shellapi.h>
 #include "imgui.h"
+#include "imgui_impl_opengl3.h"
 #include "PTO2_for_BMS.hpp"
 
 ImGuiStyle	get_custom_imgui_style(float scale_factor)
 {
-	ImGuiStyle	style = ImGui::GetStyle();
+	ImGuiStyle	style = ImGuiStyle();
 
 	style.FrameRounding = 3;
 	// style.ItemSpacing.y = 6;
@@ -17,9 +18,30 @@ ImGuiStyle	get_custom_imgui_style(float scale_factor)
 	style.ScaleAllSizes(1.5f);
 	ImGui::StyleColorsDark(&style);
 
-	//style.ScaleAllSizes(scale_factor);
+	style.ScaleAllSizes(scale_factor);
 
 	return style;
+}
+
+/*
+* Change ImGui's style and our custom font's size to match given DPI.
+* Standard DPI (100% scale) is considered to be 96.
+*/
+void	set_ImGui_scaling_from_DPI(UINT new_dpi)
+{
+	// Set ImGui style scale based on the screen's scaling factor (DPIs)
+	float scale_factor = (float)new_dpi / USER_DEFAULT_SCREEN_DPI;
+	ImGui::GetStyle() = get_custom_imgui_style(scale_factor);
+
+	// Reload our custom font, taking into account the new scale.
+	// https://github.com/ocornut/imgui/issues/6547
+	ImGuiIO &io = ImGui::GetIO();
+	io.Fonts->Clear();
+	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85,
+		static_cast<int>(17 * scale_factor));
+	io.Fonts->Build();
+	ImGui_ImplOpenGL3_DestroyDeviceObjects();
+	ImGui_ImplOpenGL3_CreateDeviceObjects();
 }
 
 namespace widgets {
@@ -53,7 +75,7 @@ namespace widgets {
 		ImGui::Text(text);
 	}
 
-}	// namespace widgets
+} // namespace widgets
 
 /*
 * Set the window's icon with the Win32 API. Icon has to be a resource thingy in Visual Studio.

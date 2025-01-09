@@ -97,7 +97,8 @@ struct Context
 	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
 };
 
-ImGuiStyle		get_custom_imgui_style(float scale_factor = NAN);
+ImGuiStyle		get_custom_imgui_style(float scale_factor);
+void			set_ImGui_scaling_from_DPI(UINT new_dpi);
 void			thread_routine();
 void			render_main_window(ImGuiIO &io);
 

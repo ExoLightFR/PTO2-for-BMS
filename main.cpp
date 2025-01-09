@@ -57,6 +57,22 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		else
 			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 	}
+	case WM_DPICHANGED:
+	{
+		// Set ImGui app scaling (style & font)
+		UINT new_dpi = HIWORD(wParam);
+		set_ImGui_scaling_from_DPI(new_dpi);
+		// Disable window size limits to allow downscaling
+		glfwSetWindowSizeLimits(s_glfw_window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		// Subclass GLFW's handling of WM_DPICHANGED
+		int retval = CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+		// Fetch the newly set window size and set it as the new minimum
+		int win_width, win_height;
+		glfwGetWindowSize(s_glfw_window, &win_width, &win_height);
+		glfwSetWindowSizeLimits(s_glfw_window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		// Return result of GLFW's WndProc call
+		return retval;
+	}
 	/*
 	* This was a bit of a pain to research. Here are some resources I've used:
 	* https://www.codeproject.com/Articles/18783/Example-of-a-SysTray-App-in-Win32
@@ -189,10 +205,9 @@ int main(void)
 	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 	
 	// Set ImGui scale based on the screen's scaling factor (DPIs)
-	ImGui::GetStyle() = get_custom_imgui_style();
 	UINT win_dpi = GetDpiForWindow(hWnd);
 	float scale_factor = (float)win_dpi / USER_DEFAULT_SCREEN_DPI;
-	ImGui::GetStyle().ScaleAllSizes(scale_factor);
+	ImGui::GetStyle() = get_custom_imgui_style(scale_factor);
 	// Load our custom font from memory, taking into account our scaling factor
 	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85,
 		static_cast<int>(17 * scale_factor));
