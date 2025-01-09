@@ -48,7 +48,8 @@ namespace widgets {
 		return (g.FontSize + g.Style.ItemSpacing.y) * items_count - g.Style.ItemSpacing.y + (g.Style.WindowPadding.y * 2);
 	}
 
-	static int	get_index_of_selected_item(std::optional<FalconLightData> const &PTO2_light_bind, std::vector<FalconLightData> const &items)
+	static int	get_index_of_selected_item(std::optional<FalconLightData> const &PTO2_light_bind,
+		std::vector<FalconLightData> const &items)
 	{
 		if (PTO2_light_bind.has_value())
 		{
@@ -61,7 +62,7 @@ namespace widgets {
 		return -1;
 	}
 
-	bool	PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID, int popup_max_height_in_items /*= -1 */)
+	bool	PTO2_light_assign(const char *label, PTO2LightID PTO_light_ID, int popup_max_height_in_items /*= -1 */)
 	{
 		using namespace fts;
 
@@ -84,10 +85,7 @@ namespace widgets {
 		bool value_changed = false;
 
 		// === ERASE BUTTON ===
-		bool disable_button = !PTO2_light_bind.has_value();
-		if (disable_button)
-			ImGui::BeginDisabled();
-
+		ImGui::BeginDisabled(!PTO2_light_bind.has_value());
 		ImGui::PushID(PTO_light_ID);
 		if (ColoredButton("Erase", { 172, 0, 0 }))
 		{
@@ -95,9 +93,7 @@ namespace widgets {
 			value_changed = true;
 		}
 		ImGui::PopID();
-
-		if (disable_button)
-			ImGui::EndDisabled();
+		ImGui::EndDisabled();
 
 		ImGui::SameLine();
 

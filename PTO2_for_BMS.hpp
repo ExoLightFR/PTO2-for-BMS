@@ -105,7 +105,7 @@ void			render_main_window(ImGuiIO &io);
 namespace widgets {
 	bool		ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
 	void		TextCentered(const char *text);
-	bool		PTO2_light_assign_widget(const char *label, PTO2LightID PTO_light_ID,
+	bool		PTO2_light_assign(const char *label, PTO2LightID PTO_light_ID,
 		int popup_max_height_in_items = -1);
 }
 

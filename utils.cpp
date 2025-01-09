@@ -1,6 +1,7 @@
 #include <string>
 #include <stdexcept>
 #include <Windows.h>
+#include <shellapi.h>
 #include "imgui.h"
 #include "PTO2_for_BMS.hpp"
 

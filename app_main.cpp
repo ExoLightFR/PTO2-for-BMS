@@ -99,11 +99,13 @@ void	thread_routine()
 	while (g_context.thread_running)
 	{
 		bool success = true;
-		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, is_light_on(bms_shared_mem, GEAR_HANDLE_BRIGHTNESS));
+		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS,
+			is_light_on(bms_shared_mem, GEAR_HANDLE_BRIGHTNESS));
 		for (int i = MASTER_CAUTION; i <= HOOK; ++i)
 		{
 			PTO2LightID PTO_light = static_cast<PTO2LightID>(i);
-			success = success && set_PTO2_light(g_context.hid_device, PTO_light, is_light_on(bms_shared_mem, PTO_light));
+			success = success && set_PTO2_light(g_context.hid_device, PTO_light,
+				is_light_on(bms_shared_mem, PTO_light));
 		}
 		if (!success)
 		{	// Failed HID write operation, most likely because device is disconnected: stop the thread.
@@ -183,37 +185,34 @@ void    render_main_window(ImGuiIO& io)
 	widgets::connect_button();
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
-	bool disable_editing = g_context.thread_running;
-	if (disable_editing)
-		ImGui::BeginDisabled();
+	ImGui::BeginDisabled(g_context.thread_running);
 
-	// Don't use a boolean! Doing changed = changed || PTO2_light_assign_widget(...) shorts the rest
+	// Don't use a boolean! Doing changed = changed || PTO2_light_assign(...) shorts the rest
 	// of the calls to the widget functions, which creates a visual glitch as the combos don't get rendered.
 	int has_changed = 0;
-	has_changed |= (int)widgets::PTO2_light_assign_widget("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("Master caution", PTO2LightID::MASTER_CAUTION);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("HOOK light", PTO2LightID::HOOK);
+	has_changed |= (int)widgets::PTO2_light_assign("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
+	has_changed |= (int)widgets::PTO2_light_assign("Master caution", PTO2LightID::MASTER_CAUTION);
+	has_changed |= (int)widgets::PTO2_light_assign("HOOK light", PTO2LightID::HOOK);
 	
-	has_changed |= (int)widgets::PTO2_light_assign_widget("NOSE gear light", PTO2LightID::NOSE);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("LEFT gear light", PTO2LightID::LEFT);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("RIGHT gear light", PTO2LightID::RIGHT);
+	has_changed |= (int)widgets::PTO2_light_assign("NOSE gear light", PTO2LightID::NOSE);
+	has_changed |= (int)widgets::PTO2_light_assign("LEFT gear light", PTO2LightID::LEFT);
+	has_changed |= (int)widgets::PTO2_light_assign("RIGHT gear light", PTO2LightID::RIGHT);
 
-	has_changed |= (int)widgets::PTO2_light_assign_widget("Flaps HALF light", PTO2LightID::HALF);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("Flaps FULL light", PTO2LightID::FULL);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("Yellow FLAPS light", PTO2LightID::FLAPS);
+	has_changed |= (int)widgets::PTO2_light_assign("Flaps HALF light", PTO2LightID::HALF);
+	has_changed |= (int)widgets::PTO2_light_assign("Flaps FULL light", PTO2LightID::FULL);
+	has_changed |= (int)widgets::PTO2_light_assign("Yellow FLAPS light", PTO2LightID::FLAPS);
 	
-	has_changed |= (int)widgets::PTO2_light_assign_widget("JETT button", PTO2LightID::JETTISON);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("CTR station", PTO2LightID::STATION_CTR);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("LI station", PTO2LightID::STATION_LI);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("RI station", PTO2LightID::STATION_RI);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("LO station", PTO2LightID::STATION_LO);
-	has_changed |= (int)widgets::PTO2_light_assign_widget("RO station", PTO2LightID::STATION_RO);
+	has_changed |= (int)widgets::PTO2_light_assign("JETT button", PTO2LightID::JETTISON);
+	has_changed |= (int)widgets::PTO2_light_assign("CTR station", PTO2LightID::STATION_CTR);
+	has_changed |= (int)widgets::PTO2_light_assign("LI station", PTO2LightID::STATION_LI);
+	has_changed |= (int)widgets::PTO2_light_assign("RI station", PTO2LightID::STATION_RI);
+	has_changed |= (int)widgets::PTO2_light_assign("LO station", PTO2LightID::STATION_LO);
+	has_changed |= (int)widgets::PTO2_light_assign("RO station", PTO2LightID::STATION_RO);
 
 	if (has_changed)
 		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);
 
-	if (disable_editing)
-		ImGui::EndDisabled();
+	ImGui::EndDisabled();
 
 	ImGui::End();
 }
