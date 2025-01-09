@@ -65,7 +65,7 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		// Disable window size limits to allow downscaling
 		glfwSetWindowSizeLimits(s_glfw_window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Subclass GLFW's handling of WM_DPICHANGED
-		int retval = CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
+		LRESULT retval = CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 		// Fetch the newly set window size and set it as the new minimum
 		int win_width, win_height;
 		glfwGetWindowSize(s_glfw_window, &win_width, &win_height);
@@ -210,7 +210,7 @@ int main(void)
 	ImGui::GetStyle() = get_custom_imgui_style(scale_factor);
 	// Load our custom font from memory, taking into account our scaling factor
 	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85,
-		static_cast<int>(17 * scale_factor));
+		std::trunc(17 * scale_factor));
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);

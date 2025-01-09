@@ -38,7 +38,7 @@ void	set_ImGui_scaling_from_DPI(UINT new_dpi)
 	ImGuiIO &io = ImGui::GetIO();
 	io.Fonts->Clear();
 	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85,
-		static_cast<int>(17 * scale_factor));
+		std::trunc(17 * scale_factor));
 	io.Fonts->Build();
 	ImGui_ImplOpenGL3_DestroyDeviceObjects();
 	ImGui_ImplOpenGL3_CreateDeviceObjects();
