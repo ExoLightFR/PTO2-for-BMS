@@ -86,9 +86,6 @@ struct Context
 {
 	hid_device			*hid_device = nullptr;
 
-	// Handle to the GLFW window. Call glfwGetWin32Window (thread-safe) to get Win32 window.
-	struct GLFWwindow	*glfw_window = nullptr;
-
 	std::jthread		thread;
 	std::atomic_bool	thread_running = false;
 	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
