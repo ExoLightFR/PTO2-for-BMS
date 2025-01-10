@@ -2,6 +2,11 @@
 #include "resource.h"
 #include "nlohmann/json_fwd.hpp"
 #include "nlohmann/json.hpp"
+#include "IVibeData.h"
+#define GL_SILENCE_DEPRECATION
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h> // Will drag system OpenGL headers
 
 //  BACKLIGHT FULL:		02 05 BF 00 00 03 49 00 FF 00 00 00 00 00
 //  BACKLIGHT OFF:		02 05 BF 00 00 03 49 00 00 00 00 00 00 00
@@ -71,7 +76,7 @@ static bool	set_PTO2_light(hid_device *device, PTO2LightID light, bool set_on)
 /*
 * Read Falcon's shared memory to check if associated PTO light should be turned on.
 */
-static bool	is_light_on(void *shared_mem, PTO2LightID PTO_light)
+static bool	is_light_on(const void *shared_mem, PTO2LightID PTO_light)
 {
 	auto &light_bind = g_context.PTO2_light_assignment_map[PTO_light];
 	if (!light_bind.has_value())
@@ -81,31 +86,91 @@ static bool	is_light_on(void *shared_mem, PTO2LightID PTO_light)
 	return *light_bits & light_bind->ID.light_bit;
 }
 
+template <class T>
+const T*	get_falcon_shared_memory(const char *name)
+{
+	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, name);
+	if (!file_map_handle)
+		return nullptr;
+
+	LPVOID shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
+	if (!shared_mem)
+		UnmapViewOfFile(shared_mem);
+	
+	// This just leaks lmao don't do that
+	return reinterpret_cast<const T*>(shared_mem);
+}
+
+// TESTME
+template <class T>
+class FalconSharedMemArea
+{
+	HANDLE	_file_map_handle = nullptr;
+	LPVOID	_shared_mem = nullptr;
+public:
+	FalconSharedMemArea() = delete;
+	FalconSharedMemArea(const char *name) noexcept
+	{
+		_file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, name);
+		if (_file_map_handle)
+			_shared_mem = MapViewOfFile(_file_map_handle, FILE_MAP_READ, 0, 0, 0);
+	}
+	~FalconSharedMemArea() noexcept
+	{
+		if (_shared_mem)
+			UnmapViewOfFile(_shared_mem);
+		if (_file_map_handle)
+			CloseHandle(_file_map_handle);
+	}
+	FalconSharedMemArea(FalconSharedMemArea const &) = delete;
+	FalconSharedMemArea& operator=(FalconSharedMemArea const &) = delete;
+
+	bool	is_open() const noexcept
+	{
+		return _file_map_handle && _shared_mem;
+	}
+	const T *get() const noexcept
+	{
+		return reinterpret_cast<const T *>(_shared_mem);
+	}
+	const void *get_raw() const noexcept
+	{
+		return reinterpret_cast<const void *>(_shared_mem);
+	}
+};
+
+// TESTME: New routine
 void	thread_routine()
 {
-	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
-	if (!file_map_handle)
+	FalconSharedMemArea<IntellivibeData> ivibe_data("FalconIntellivibeSharedMemoryArea");
+	if (!ivibe_data.is_open())
 		return;
 
-	LPVOID bms_shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
-	const FlightData *flight_data = reinterpret_cast<FlightData *>(bms_shared_mem);
-	if (!flight_data)
+	// Connected to BMS, but waiting for sim to be in 3D
+	g_context.thread_running = true;
+	while (!ivibe_data.get()->In3D)
+		std::this_thread::sleep_for(THREAD_SLEEP_INTERVAL);
+
+	FalconSharedMemArea<FlightData>	flight_data("FalconSharedMemoryArea");
+	if (!flight_data.is_open())
 	{
-		UnmapViewOfFile(bms_shared_mem);
+		g_context.thread_running = false;
 		return;
 	}
+	// Minimize main window to taskbar once we're in 3D and have opened FlightData shared memory
+	HWND hWnd = glfwGetWin32Window(g_context.glfw_window);
+	(void)SendNotifyMessageA(hWnd, WM_SIZE, SIZE_MINIMIZED, 0);
 
-	g_context.thread_running = true;
 	while (g_context.thread_running)
 	{
 		bool success = true;
 		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS,
-			is_light_on(bms_shared_mem, GEAR_HANDLE_BRIGHTNESS));
+			is_light_on(flight_data.get_raw(), GEAR_HANDLE_BRIGHTNESS));
 		for (int i = MASTER_CAUTION; i <= HOOK; ++i)
 		{
 			PTO2LightID PTO_light = static_cast<PTO2LightID>(i);
 			success = success && set_PTO2_light(g_context.hid_device, PTO_light,
-				is_light_on(bms_shared_mem, PTO_light));
+				is_light_on(flight_data.get_raw(), PTO_light));
 		}
 		if (!success)
 		{	// Failed HID write operation, most likely because device is disconnected: stop the thread.
@@ -115,9 +180,9 @@ void	thread_routine()
 		std::this_thread::sleep_for(THREAD_SLEEP_INTERVAL);
 	}
 
-	UnmapViewOfFile(bms_shared_mem);
-	CloseHandle(file_map_handle);
-	set_window_icon(WINDOW_ICON_ID_RED);
+	// UnmapViewOfFile(bms_shared_mem);
+	// CloseHandle(file_map_handle);
+	//set_window_icon(WINDOW_ICON_ID_RED);
 }
 
 namespace widgets {

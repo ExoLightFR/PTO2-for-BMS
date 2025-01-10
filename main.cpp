@@ -36,7 +36,6 @@ static void glfw_error_callback(int error, const char* description)
 * the system tray icon. See below.
 */
 static WNDPROC		s_glfw_wndproc = nullptr;
-static GLFWwindow	*s_glfw_window = nullptr;
 
 /*
 * Write our own WndProc function that subclasses GLFW's. With this, we can handle our own custom events,
@@ -63,13 +62,13 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		UINT new_dpi = HIWORD(wParam);
 		set_ImGui_scaling_from_DPI(new_dpi);
 		// Disable window size limits to allow downscaling
-		glfwSetWindowSizeLimits(s_glfw_window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		glfwSetWindowSizeLimits(g_context.glfw_window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Subclass GLFW's handling of WM_DPICHANGED
 		LRESULT retval = CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 		// Fetch the newly set window size and set it as the new minimum
 		int win_width, win_height;
-		glfwGetWindowSize(s_glfw_window, &win_width, &win_height);
-		glfwSetWindowSizeLimits(s_glfw_window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		glfwGetWindowSize(g_context.glfw_window, &win_width, &win_height);
+		glfwSetWindowSizeLimits(g_context.glfw_window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Return result of GLFW's WndProc call
 		return retval;
 	}
@@ -137,7 +136,7 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ShowWindow(hWnd, SW_HIDE);
 			break;
 		case ID_TRAY_MENU_QUIT:
-			glfwSetWindowShouldClose(s_glfw_window, GLFW_TRUE);
+			glfwSetWindowShouldClose(g_context.glfw_window, GLFW_TRUE);
 			break;
 		default:
 			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
@@ -179,7 +178,7 @@ int main(void)
 	GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
-	s_glfw_window = window;
+	g_context.glfw_window = window;
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
 	/*
@@ -219,6 +218,7 @@ int main(void)
 	// Init icons to red because app is not connected on startup
 	set_window_icon(WINDOW_ICON_ID_RED);
 	add_tray_icon(WINDOW_ICON_ID_RED);
+	hid_init();
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
