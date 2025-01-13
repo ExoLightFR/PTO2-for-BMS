@@ -155,12 +155,14 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 // Main code
 int main(void)
 {
-	// Don't allow multiple instances, out of caution
-	if (FindWindowA(NULL, WIN_TITLE) != nullptr)
+	// Don't allow multiple instances, out of caution. If another instance is detected, show its
+	// window to the user.
+	HWND other_window = FindWindowA(NULL, WIN_TITLE);
+	if (other_window != nullptr)
 	{
-		MessageBoxA(nullptr, "Another instance of this application is already running! "
-			"It might be minimized in your taskbar.",
-			"Whoops!", MB_OK | MB_ICONHAND | MB_SETFOREGROUND);
+		ShowWindow(other_window, SW_RESTORE);
+		SetForegroundWindow(other_window);
+		SetFocus(other_window);
 		return 1;
 	}
 
