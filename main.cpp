@@ -52,6 +52,8 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			// Hide the window with an animation (so user doesn't think it crashed or quit)
 			AnimateWindow(hWnd, 100, AW_HIDE | AW_SLIDE | AW_VER_NEGATIVE);
+			// XXX: Do that instead of returning false? Why/why not?
+			// return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 			return FALSE;
 		}
 		else
@@ -219,6 +221,17 @@ int main(void)
 	// Init icons to red because app is not connected on startup
 	set_window_icon(WINDOW_ICON_ID_RED);
 	add_tray_icon(WINDOW_ICON_ID_RED);
+	hid_init(); // Avoid potential resource leak according to some diagnostics tools
+
+	/*
+	* For some reason, the window starts "not responding" when not focused for a few seconds unless I do this
+	* BUT! It doesn't do that if the Windows Task Manager is open. It also immediately unfreezes when you
+	* hover over the taskbar icon, or when you alt-tab (even if you don't alt-tab from/to the app).
+	* I have no idea of the root cause, I don't *think* it's message pumping, I tried solutions to remedy that,
+	* and when logging WndProc messages to a file, the logs get cut mid-string (doesn't wait for new line) when
+	* it stops responding.
+	*/
+	DisableProcessWindowsGhosting();
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -249,6 +262,12 @@ int main(void)
 		ImGui::NewFrame();
 
 		render_main_window(io);
+		/*
+		* For some reason, on some computers, the app will take a huge amount of CPU time if the render loop
+		* is left like this (even with Vsync!). So we sleep for 1ms just to leave the CPU alone. It won't have
+		* any performance impact anyway.
+		*/
+		ImGui_ImplGlfw_Sleep(1);
 
 		// Rendering
 		ImGui::Render();
@@ -259,7 +278,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		// Dirty (good?) trick to give CPU cycles back when window is not focused
+		// Dirty (good?) trick to give CPU cycles back when window is not focused, but still drawn
 		if (!glfwGetWindowAttrib(window, GLFW_FOCUSED))
 			ImGui_ImplGlfw_Sleep(10);
 
