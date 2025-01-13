@@ -98,6 +98,7 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClCompile Include="conf_file.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
     <ClCompile Include="falcon_light_data_list.cpp" />
+    <ClCompile Include="firmware_check.cpp" />
     <ClCompile Include="hidapi\hid.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -131,6 +132,7 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClInclude Include="include\IVibeData.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
+    <ClInclude Include="PerformanceTimer.hpp" />
     <ClInclude Include="PTO2_for_BMS.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

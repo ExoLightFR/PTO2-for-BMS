@@ -125,10 +125,7 @@ namespace widgets {
 	{
 		float height = ImGui::GetFrameHeight() * 2.0f;
 
-		// Opens the first WW PTO2 device that it finds. Don't handle multiple PTO2s connected
-		// at the same time: who the hell would do that?
-		if (!g_context.hid_device
-			&& !(g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr)))
+		if (!g_context.hid_device)
 		{
 			// No PTO2 device found, don't allow connection to BMS
 			ImGui::BeginDisabled();
@@ -156,13 +153,11 @@ namespace widgets {
 				set_window_icon(WINDOW_ICON_ID_RED);
 			}
 		}
-		// Add some empty spacing
-		ImGui::Spacing();
 	}
-}
 
+} // namespace widgets
 
-void    render_main_window(ImGuiIO& io)
+void    render_main_window(ImGuiIO &io)
 {
 	ImGui::SetNextWindowSize(io.DisplaySize);
 	ImGui::SetNextWindowPos({ 0, 0 });
@@ -182,7 +177,16 @@ void    render_main_window(ImGuiIO& io)
 		g_context.require_device_reopen = false;
 	}
 
+	// Opens the first WW PTO2 device that it finds. Don't handle multiple PTO2s connected
+	// at the same time: who the hell would do that?
+	if (!g_context.hid_device)
+		g_context.hid_device = hid_open(PTO2_VENDOR_ID, PTO2_PRODUCT_ID, nullptr);
+
+	// Show warning modal if PTO2 firmware isn't tested/supported by this program
+	widgets::PTO2_firmware_warning_modal();
+
 	widgets::connect_button();
+	ImGui::Spacing(); // Empty spacing below button
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
 	ImGui::BeginDisabled(g_context.thread_running);
@@ -193,7 +197,7 @@ void    render_main_window(ImGuiIO& io)
 	has_changed |= (int)widgets::PTO2_light_assign("Gear handle light", PTO2LightID::GEAR_HANDLE_BRIGHTNESS);
 	has_changed |= (int)widgets::PTO2_light_assign("Master caution", PTO2LightID::MASTER_CAUTION);
 	has_changed |= (int)widgets::PTO2_light_assign("HOOK light", PTO2LightID::HOOK);
-	
+
 	has_changed |= (int)widgets::PTO2_light_assign("NOSE gear light", PTO2LightID::NOSE);
 	has_changed |= (int)widgets::PTO2_light_assign("LEFT gear light", PTO2LightID::LEFT);
 	has_changed |= (int)widgets::PTO2_light_assign("RIGHT gear light", PTO2LightID::RIGHT);
@@ -201,7 +205,7 @@ void    render_main_window(ImGuiIO& io)
 	has_changed |= (int)widgets::PTO2_light_assign("Flaps HALF light", PTO2LightID::HALF);
 	has_changed |= (int)widgets::PTO2_light_assign("Flaps FULL light", PTO2LightID::FULL);
 	has_changed |= (int)widgets::PTO2_light_assign("Yellow FLAPS light", PTO2LightID::FLAPS);
-	
+
 	has_changed |= (int)widgets::PTO2_light_assign("JETT button", PTO2LightID::JETTISON);
 	has_changed |= (int)widgets::PTO2_light_assign("CTR station", PTO2LightID::STATION_CTR);
 	has_changed |= (int)widgets::PTO2_light_assign("LI station", PTO2LightID::STATION_LI);

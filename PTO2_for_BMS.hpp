@@ -86,6 +86,8 @@ struct Context
 {
 	hid_device			*hid_device = nullptr;
 
+	struct GLFWwindow	*glfw_window = nullptr;
+
 	std::jthread		thread;
 	std::atomic_bool	thread_running = false;
 	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
@@ -108,6 +110,7 @@ namespace widgets {
 	void		TextCentered(const char *text);
 	bool		PTO2_light_assign(const char *label, PTO2LightID PTO_light_ID,
 		int popup_max_height_in_items = -1);
+	void		PTO2_firmware_warning_modal();
 }
 
 // Serialisation for JSON config file

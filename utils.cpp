@@ -14,6 +14,7 @@ ImGuiStyle	get_custom_imgui_style(float scale_factor)
 	// style.ItemSpacing.y = 6;
 	style.GrabRounding = 4;
 	style.PopupRounding = 3;
+	//style.WindowRounding = 4;
 
 	style.ScaleAllSizes(1.5f);
 	ImGui::StyleColorsDark(&style);

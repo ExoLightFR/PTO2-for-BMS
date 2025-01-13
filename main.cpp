@@ -36,7 +36,6 @@ static void glfw_error_callback(int error, const char* description)
 * the system tray icon. See below.
 */
 static WNDPROC		s_glfw_wndproc = nullptr;
-static GLFWwindow	*s_glfw_window = nullptr;
 
 /*
 * Write our own WndProc function that subclasses GLFW's. With this, we can handle our own custom events,
@@ -61,17 +60,18 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_DPICHANGED:
 	{
+		GLFWwindow *window = g_context.glfw_window;
 		// Set ImGui app scaling (style & font)
 		UINT new_dpi = HIWORD(wParam);
 		set_ImGui_scaling_from_DPI(new_dpi);
 		// Disable window size limits to allow downscaling
-		glfwSetWindowSizeLimits(s_glfw_window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		glfwSetWindowSizeLimits(window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Subclass GLFW's handling of WM_DPICHANGED
 		LRESULT retval = CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 		// Fetch the newly set window size and set it as the new minimum
 		int win_width, win_height;
-		glfwGetWindowSize(s_glfw_window, &win_width, &win_height);
-		glfwSetWindowSizeLimits(s_glfw_window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		glfwGetWindowSize(window, &win_width, &win_height);
+		glfwSetWindowSizeLimits(window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Return result of GLFW's WndProc call
 		return retval;
 	}
@@ -108,7 +108,7 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 			// Makes the connect option bold
 			SetMenuDefaultItem(menu, ID_TRAY_MENU_CONNECT, FALSE);
-			
+
 			// This is annoying, but without this the menu doesn't disappear when clicking outside it.
 			// Just a Win32 limitation, I guess? The TrackIR software has the same problem.
 			SetForegroundWindow(hWnd);
@@ -139,7 +139,7 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ShowWindow(hWnd, SW_HIDE);
 			break;
 		case ID_TRAY_MENU_QUIT:
-			glfwSetWindowShouldClose(s_glfw_window, GLFW_TRUE);
+			glfwSetWindowShouldClose(g_context.glfw_window, GLFW_TRUE);
 			break;
 		default:
 			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
@@ -181,7 +181,7 @@ int main(void)
 	GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, nullptr, nullptr);
 	if (window == nullptr)
 		return 1;
-	s_glfw_window = window;
+	g_context.glfw_window = window;
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
 	/*
@@ -200,12 +200,12 @@ int main(void)
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;	// Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;	// Enable Gamepad Controls
 	io.IniFilename = nullptr;								// Disable .ini ImGui file
-	
+
 	// Set custom WndProc handler so we can subclass GLFW's
 	HWND hWnd = glfwGetWin32Window(window);
 	s_glfw_wndproc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
 	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
-	
+
 	// Set ImGui scale based on the screen's scaling factor (DPIs)
 	UINT win_dpi = GetDpiForWindow(hWnd);
 	float scale_factor = (float)win_dpi / USER_DEFAULT_SCREEN_DPI;
