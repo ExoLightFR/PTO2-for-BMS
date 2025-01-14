@@ -15,6 +15,22 @@
 #include "FlightData.h"
 #include "resource.h"
 
+/* ========================== VERSION INFORMATION ========================== */
+#include "version.h"
+#define STRINGIFY(x)		#x
+#define TOSTRING(x)			STRINGIFY(x)
+#define VERSION_STRING_FULL	TOSTRING(VERSION_MAJOR) "." TOSTRING(VERSION_MINOR) "." TOSTRING(VERSION_REVISION) "." TOSTRING(VERSION_BUILD)
+#define VERSION_STRING		TOSTRING(VERSION_MAJOR) "." TOSTRING(VERSION_MINOR) "." TOSTRING(VERSION_REVISION)
+
+// String representations of app version (with & without build number)
+constexpr inline static const char	*APP_FULL_VERSION = "v" VERSION_STRING_FULL;
+constexpr inline static const char	*APP_VERSION = "v" VERSION_STRING;
+
+#undef STRINGIFY
+#undef TOSTRING
+#undef VERSION_STRING
+/* ========================================================================= */
+
 using Json = nlohmann::json;
 
 constexpr int	WINDOW_ICON_ID_GREEN	= IDI_ICON1;

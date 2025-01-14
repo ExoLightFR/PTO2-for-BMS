@@ -134,6 +134,9 @@
     <ClInclude Include="PerformanceTimer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PTO2_for_BMS.rc">
@@ -147,5 +150,10 @@
     <Image Include="resources\PTO2_for_BMS_icon_red.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PTO2_for_BMS.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

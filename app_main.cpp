@@ -220,11 +220,10 @@ void    render_main_window(ImGuiIO &io)
 
 	// Center-aligned footer with app version shown
 	ImGui::PushStyleVar(ImGuiStyleVar_SeparatorTextAlign, { 0.5f, 0.5f });
-	// TODO: encode version somehow somewhere to match .rc file?
-	ImGui::SeparatorText("v1.1.0");
+	ImGui::SeparatorText(APP_VERSION);
 	ImGui::PopStyleVar();
 
-	g_context.window_sizes.imgui_y = ImGui::GetCursorPosY();
+	g_context.window_sizes.imgui_y = static_cast<int>(ImGui::GetCursorPosY());
 	
 	ImGui::End();
 }
