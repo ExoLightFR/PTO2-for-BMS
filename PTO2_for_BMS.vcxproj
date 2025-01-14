@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;lib\glfw\lib-vc2022\glfw3.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;lib\glfw\lib-vc2022\glfw3.lib;dwmapi.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>
       </EntryPointSymbol>
     </Link>
@@ -83,7 +83,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;lib\glfw\lib-vc2022\glfw3.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;lib\glfw\lib-vc2022\glfw3.lib;dwmapi.lib;uxtheme.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>
       </EntryPointSymbol>
     </Link>
@@ -97,6 +97,7 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClCompile Include="app_main.cpp" />
     <ClCompile Include="conf_file.cpp" />
     <ClCompile Include="embed_roboto_medium.cpp" />
+    <ClCompile Include="embed_w95_font.cpp" />
     <ClCompile Include="falcon_light_data_list.cpp" />
     <ClCompile Include="firmware_check.cpp" />
     <ClCompile Include="hidapi\hid.c" />

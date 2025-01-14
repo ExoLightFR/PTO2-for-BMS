@@ -102,8 +102,10 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			HMENU menu = CreatePopupMenu();
 
 			UINT connected_flag = (g_context.thread_running ? MF_CHECKED : MF_UNCHECKED);
+			UINT retro_flag = (g_context.retro_mode ? MF_CHECKED : MF_UNCHECKED);
 			InsertMenuA(menu, 0xFFFFFFFF, flags | connected_flag, ID_TRAY_MENU_CONNECT, "Connect to BMS");
 			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_MINIMIZE, "Minimize to tray");
+			InsertMenuA(menu, 0xFFFFFFFF, flags | retro_flag, ID_TRAY_MENU_RETRO_MODE, "Retro mode");
 			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_SEPARATOR, NULL);
 			InsertMenuA(menu, 0xFFFFFFFF, flags, ID_TRAY_MENU_QUIT, "Quit");
 
@@ -139,6 +141,14 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_TRAY_MENU_MINIMIZE:
 			ShowWindow(hWnd, SW_HIDE);
 			break;
+		case ID_TRAY_MENU_RETRO_MODE:
+		{
+			g_context.retro_mode = !g_context.retro_mode;
+			set_ImGui_scaling_from_DPI(GetDpiForWindow(hWnd));
+			LPCWSTR window_theme = (g_context.retro_mode ? L"" : nullptr);
+			SetWindowTheme(hWnd, window_theme, window_theme);
+			break;
+		}
 		case ID_TRAY_MENU_QUIT:
 			glfwSetWindowShouldClose(g_context.glfw_window, GLFW_TRUE);
 			break;

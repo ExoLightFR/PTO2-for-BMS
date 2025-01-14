@@ -45,6 +45,7 @@ constexpr WORD	ID_TRAY_MENU_QUIT		= 1;
 constexpr WORD	ID_TRAY_MENU_SEPARATOR	= 2;
 constexpr WORD	ID_TRAY_MENU_CONNECT	= 3;
 constexpr WORD	ID_TRAY_MENU_MINIMIZE	= 4;
+constexpr WORD	ID_TRAY_MENU_RETRO_MODE	= 5;
 
 constexpr const wchar_t		REG_BENCHMARKSIMS_PATH[] = L"SOFTWARE\\WOW6432Node\\Benchmark Sims\\";
 constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
@@ -57,7 +58,8 @@ constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
 
 // Roboto font embeded into the binary for ImGui
-extern const char Roboto_Medium_compressed_data_base85[148145 + 1];
+extern const char	Roboto_Medium_compressed_data_base85[148145 + 1];
+extern const char	W95_font_compressed_data_base85[17040 + 1];
 
 enum PTO2LightID : unsigned char {
 	/* Brightness has 256 values, from 0x00 to 0xff */
@@ -114,6 +116,7 @@ struct Context
 	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
 	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
 
+	bool	retro_mode = false;
 	struct {
 		unsigned int	min_y = 0;		// GLFW minimum window height
 		unsigned int	imgui_y = 0;	// ImGui main window height (even if clipped by GLFW window)
@@ -121,6 +124,7 @@ struct Context
 };
 
 ImGuiStyle		get_custom_imgui_style(float scale_factor);
+ImGuiStyle		get_retro_imgui_style(float scale_factor);
 void			set_ImGui_scaling_from_DPI(UINT new_dpi);
 void			thread_routine();
 void			render_main_window(ImGuiIO &io);
