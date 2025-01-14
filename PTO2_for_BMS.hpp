@@ -35,7 +35,7 @@ constexpr const char		CONF_FILE_NAME[] = "PTO2_lights.conf";
 
 constexpr const char		WIN_TITLE[] = "Winwing PTO2 for Falcon BMS";
 constexpr int				WIN_WIDTH = 610;
-constexpr int				WIN_HEIGHT = 543;
+constexpr int				WIN_HEIGHT = 570;
 constexpr unsigned short	PTO2_VENDOR_ID = 0x4098;
 constexpr unsigned short	PTO2_PRODUCT_ID = 0xbf05;
 constexpr auto				THREAD_SLEEP_INTERVAL = std::chrono::milliseconds(100);
@@ -97,6 +97,11 @@ struct Context
 	const std::vector<FalconLightData>	falcon_lights = init_falcon_light_data_list();
 	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
 	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
+
+	struct {
+		unsigned int	min_y = 0;		// GLFW minimum window height
+		unsigned int	imgui_y = 0;	// ImGui main window height (even if clipped by GLFW window)
+	} window_sizes;
 };
 
 ImGuiStyle		get_custom_imgui_style(float scale_factor);

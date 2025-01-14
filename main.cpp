@@ -194,6 +194,8 @@ int main(void)
 	int win_width, win_height;
 	glfwGetWindowSize(window, &win_width, &win_height);
 	glfwSetWindowSizeLimits(window, win_width, win_height, GLFW_DONT_CARE, GLFW_DONT_CARE);
+	g_context.window_sizes.min_y = win_height;
+	g_context.window_sizes.imgui_y = win_height;
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -262,6 +264,23 @@ int main(void)
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+
+		/*
+		* The size of the ImGui window does not scale linearily with the overall scale of the window,
+		* because the ImGui style sizes are truncated to whole pixels. Thus, non-whole scales leave
+		* a gap between the imgui window height and the GLFW window height. To solve this, if the
+		* GLFW minimum window size does not match the ImGui main window height, it is readjusted
+		* and the GLFW window resized to match.
+		*/
+		if (g_context.window_sizes.min_y != g_context.window_sizes.imgui_y)
+		{
+			int window_width;
+			glfwGetWindowSize(window, &window_width, nullptr);
+			glfwSetWindowSizeLimits(window, window_width, g_context.window_sizes.imgui_y,
+				GLFW_DONT_CARE, GLFW_DONT_CARE);
+			glfwSetWindowSize(window, window_width, g_context.window_sizes.imgui_y);
+			g_context.window_sizes.min_y = g_context.window_sizes.imgui_y;
+		}
 
 		render_main_window(io);
 		/*

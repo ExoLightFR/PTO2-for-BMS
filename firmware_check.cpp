@@ -78,20 +78,20 @@ namespace widgets {
 			// https://github.com/ocornut/imgui/issues/902
 			// https://github.com/ocornut/imgui/issues/2313
 			auto [major, minor] = decompose_release_number(release_number);
-			ImGui::TextWrapped("Your Winwing PTO2's firmware version is %u.%02u, which has not been tested"
-				" yet. Although unlikely, this app could be incompatible"
-				" with your PTO2 or even DAMAGE its firmware.",
+			ImGui::TextWrapped("Your Winwing PTO2's firmware version is %u.%02u, which has not been"
+				" tested yet. Although unlikely, this app could be incompatible"
+				" with your PTO2 or even DAMAGE it.",
 				major, minor);
 
 			if (release_number > supported_firmware.back())
 			{
-				ImGui::TextWrapped("It looks like your PTO2 firmware is too recent for this app. Consider"
-					" downloading the latest version of 'PTO2 for BMS' from GitHub and trying again.");
+				ImGui::TextWrapped("Consider downloading the latest version of 'PTO2 for BMS' from"
+					" GitHub and trying again.");
 			}
 			else
 			{
-				ImGui::TextWrapped("Please close this app, update your PTO2 firmware through SimAppPro,"
-					" and try again.");
+				ImGui::TextWrapped("Please close this app, update your PTO2 firmware through"
+					" SimAppPro, and try again.");
 			}
 			ImGui::Separator();
 			ImGui::TextWrapped("Supported firmware versions: %s", supported_firmware_str.c_str());
