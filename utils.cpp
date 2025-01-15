@@ -60,9 +60,16 @@ ImGuiStyle	get_retro_imgui_style(float scale_factor)
 	colors[ImGuiCol_CheckMark]				= ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
 	colors[ImGuiCol_SliderGrab]				= ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
 	colors[ImGuiCol_SliderGrabActive]		= ImVec4(0.46f, 0.54f, 0.80f, 0.60f);
-	colors[ImGuiCol_Button]					= ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
-	colors[ImGuiCol_ButtonHovered]			= ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-	colors[ImGuiCol_ButtonActive]			= ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+
+	// colors[ImGuiCol_Button]					= ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+	// colors[ImGuiCol_ButtonHovered]			= ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	// colors[ImGuiCol_ButtonActive]			= ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+
+	// Grey buttons instead of blue
+	colors[ImGuiCol_Button]					= ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	colors[ImGuiCol_ButtonHovered]			= ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+	colors[ImGuiCol_ButtonActive]			= ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+
 	colors[ImGuiCol_Header]					= ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
 	colors[ImGuiCol_HeaderHovered]			= ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
 	colors[ImGuiCol_HeaderActive]			= ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
@@ -127,9 +134,9 @@ namespace widgets {
 		float h, s, v;
 		ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(h, s, v));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(h, s + 0.1f, v + 0.1f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(h, s + 0.2f, v + 0.2f));
+		ImGui::PushStyleColor(ImGuiCol_Button,			(ImVec4)ImColor::HSV(h, s, v));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,	(ImVec4)ImColor::HSV(h, s, v + 0.1f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive,	(ImVec4)ImColor::HSV(h, s, v + 0.2f));
 		bool pressed = ImGui::Button(label, size);
 		ImGui::PopStyleColor(3);
 

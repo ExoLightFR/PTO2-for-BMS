@@ -137,7 +137,8 @@ namespace widgets {
 			// PTO2 has been found
 			if (g_context.thread_running)
 			{
-				if (ColoredButton("Disconnect from BMS", { 172, 0, 0 }, { -1, height }))
+				ImColor color = (g_context.retro_mode ? ImColor{ 127, 127, 127 } : ImColor{ 172, 0, 0 });
+				if (ColoredButton("Disconnect from BMS", color, { -1, height }))
 				{
 					g_context.thread_running = false;
 					g_context.thread.join();
@@ -146,7 +147,8 @@ namespace widgets {
 			}
 			else
 			{
-				if (ColoredButton("Connect to BMS", { 0, 172, 0 }, { -1, height }))
+				ImColor color = (g_context.retro_mode ? ImColor{ 127, 127, 127 } : ImColor{ 0, 172, 0 });
+				if (ColoredButton("Connect to BMS", color, { -1, height }))
 				{
 					g_context.thread = std::jthread(&thread_routine);
 				}
@@ -224,6 +226,6 @@ void    render_main_window(ImGuiIO &io)
 	ImGui::PopStyleVar();
 
 	g_context.window_sizes.imgui_y = static_cast<int>(ImGui::GetCursorPosY());
-	
+
 	ImGui::End();
 }

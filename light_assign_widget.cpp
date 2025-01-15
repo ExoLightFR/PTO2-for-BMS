@@ -85,9 +85,10 @@ namespace widgets {
 		bool value_changed = false;
 
 		// === ERASE BUTTON ===
+		ImColor button_color = (g_context.retro_mode ? ImColor{127, 127, 127} : ImColor{172, 0, 0});
 		ImGui::BeginDisabled(!PTO2_light_bind.has_value());
 		ImGui::PushID(PTO_light_ID);
-		if (ColoredButton("Erase", { 172, 0, 0 }))
+		if (ColoredButton("Erase", button_color))
 		{
 			PTO2_light_bind.reset();
 			value_changed = true;
