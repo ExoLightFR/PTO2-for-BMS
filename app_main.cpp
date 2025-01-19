@@ -216,7 +216,7 @@ void    render_main_window(ImGuiIO &io)
 	has_changed |= (int)widgets::PTO2_light_assign("RO station", PTO2LightID::STATION_RO);
 
 	if (has_changed)
-		serialize_PTO2_mapping_to_conf_file(g_context.PTO2_light_assignment_map);
+		serialize_settings_to_conf_file(g_context.PTO2_light_assignment_map);
 
 	ImGui::EndDisabled();
 

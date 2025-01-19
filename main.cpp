@@ -64,7 +64,7 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		GLFWwindow *window = g_context.glfw_window;
 		// Set ImGui app scaling (style & font)
 		UINT new_dpi = HIWORD(wParam);
-		set_ImGui_scaling_from_DPI(new_dpi);
+		set_app_style(new_dpi, g_context.retro_mode);
 		// Disable window size limits to allow downscaling
 		glfwSetWindowSizeLimits(window, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		// Subclass GLFW's handling of WM_DPICHANGED
@@ -144,9 +144,11 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_TRAY_MENU_RETRO_MODE:
 		{
 			g_context.retro_mode = !g_context.retro_mode;
-			set_ImGui_scaling_from_DPI(GetDpiForWindow(hWnd));
+			// Reset style, the function takes retro theme into account
+			set_app_style(GetDpiForWindow(hWnd), g_context.retro_mode);
 			LPCWSTR window_theme = (g_context.retro_mode ? L"" : nullptr);
 			SetWindowTheme(hWnd, window_theme, window_theme);
+			serialize_settings_to_conf_file(g_context.PTO2_light_assignment_map);
 			break;
 		}
 		case ID_TRAY_MENU_QUIT:
@@ -226,18 +228,14 @@ int main(void)
 	HRESULT res = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
 	// TODO: Find a way to change color of taskbar icon menu to match Windows theme
 
-	// Set ImGui scale based on the screen's scaling factor (DPIs)
-	UINT win_dpi = GetDpiForWindow(hWnd);
-	float scale_factor = (float)win_dpi / USER_DEFAULT_SCREEN_DPI;
-	ImGui::GetStyle() = get_custom_imgui_style(scale_factor);
-	// Load our custom font from memory, taking into account our scaling factor
-	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Roboto_Medium_compressed_data_base85,
-		std::trunc(17 * scale_factor));
-
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init(glsl_version);
 
+	// Init settings, conf file, load conf file...
+	init_settings_and_conf_file();
+	// Set custom ImGui style. Load conf before to load retro mode if it's active in conf file
+	set_app_style(GetDpiForWindow(hWnd), g_context.retro_mode);
 	// Init icons to red because app is not connected on startup
 	set_window_icon(WINDOW_ICON_ID_RED);
 	add_tray_icon(WINDOW_ICON_ID_RED);

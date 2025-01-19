@@ -98,7 +98,6 @@ struct FalconLightData
 std::vector<FalconLightData>	init_falcon_light_data_list();
 
 using PTO2LightBinds = std::array< std::optional<FalconLightData>, HOOK + 1 >;
-PTO2LightBinds	init_PTO2_light_map_and_conf_file();
 
 struct Context
 {
@@ -114,7 +113,7 @@ struct Context
 
 	const std::vector<FalconLightData>	falcon_lights = init_falcon_light_data_list();
 	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
-	PTO2LightBinds	PTO2_light_assignment_map = init_PTO2_light_map_and_conf_file();
+	PTO2LightBinds	PTO2_light_assignment_map;
 
 	bool	retro_mode = false;
 	struct {
@@ -125,7 +124,7 @@ struct Context
 
 ImGuiStyle		get_custom_imgui_style(float scale_factor);
 ImGuiStyle		get_retro_imgui_style(float scale_factor);
-void			set_ImGui_scaling_from_DPI(UINT new_dpi);
+void			set_app_style(UINT new_dpi, bool retro_mode);
 void			thread_routine();
 void			render_main_window(ImGuiIO &io);
 
@@ -139,10 +138,11 @@ namespace widgets {
 }
 
 // Serialisation for JSON config file
+void			init_settings_and_conf_file();
 Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);
 PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
-void			serialize_PTO2_mapping_to_conf_file(PTO2LightBinds const &mapping);
-PTO2LightBinds	deserialize_conf_to_PTO2_mapping();
+void			serialize_settings_to_conf_file(PTO2LightBinds const &mapping);
+void			deserialize_conf_to_settings();
 
 // Win32 utils, stuff like window/system tray icon, registry...
 void			set_window_icon(int IDI_thing);

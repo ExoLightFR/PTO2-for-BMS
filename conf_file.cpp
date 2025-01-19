@@ -40,12 +40,14 @@ PTO2LightBinds	json_to_PTO2_mapping(Json const &conf)
 {
 	PTO2LightBinds	mapping = {};	// Populated by empty optionals at construction
 
-	for (auto const &[key, value] : conf.items())
+	if (!conf.contains("light_mapping") || !conf["light_mapping"].is_object())
+		return mapping;
+
+	for (auto const &[key, value] : conf["light_mapping"].items())
 	{
 		try {
 			int index = std::stoi(key);
-			if (value.at("offset").type() != Json::value_t::number_unsigned
-				|| value.at("light_bit").type() != Json::value_t::number_unsigned)
+			if (!value.at("offset").is_number_unsigned() || !value.at("light_bit").is_number_unsigned())
 			{
 				// Just continue in case of error, item will be an empty optional
 				continue;
@@ -106,19 +108,28 @@ static std::filesystem::path	get_conf_file_path()
 	return fs::current_path() / CONF_FILE_NAME;
 }
 
-void	serialize_PTO2_mapping_to_conf_file(PTO2LightBinds const &mapping)
+void	serialize_settings_to_conf_file(PTO2LightBinds const &mapping)
 {
 	std::ofstream conf_file(get_conf_file_path());
-	Json conf = PTO2_mapping_to_json(mapping);
-	conf_file << conf.dump();
+	Json conf;
+	conf.emplace("light_mapping", PTO2_mapping_to_json(mapping));
+	conf["retro_mode"] = g_context.retro_mode;
+	conf_file << conf.dump(4);
 }
 
-PTO2LightBinds	deserialize_conf_to_PTO2_mapping()
+void	deserialize_conf_to_settings()
 {
-	std::ifstream conf_file(get_conf_file_path());
-	Json conf;
-	conf_file >> conf;
-	return json_to_PTO2_mapping(conf);
+	try {
+		std::ifstream conf_file(get_conf_file_path());
+		Json conf;
+		conf_file >> conf;
+		if (conf.contains("retro_mode") && conf["retro_mode"].is_boolean())
+			g_context.retro_mode = conf["retro_mode"];
+		g_context.PTO2_light_assignment_map = json_to_PTO2_mapping(conf);
+	}
+	catch (std::exception const &) {
+		g_context.PTO2_light_assignment_map = {};
+	}
 }
 
 /*
@@ -130,56 +141,59 @@ PTO2LightBinds	deserialize_conf_to_PTO2_mapping()
 */
 static const char *DEFAULT_PTO2_JSON_CONF = R"(
 {
-	"1": {
-		"light_bit": 1073741824,
-		"offset": 124
+	"light_mapping": {
+		"1": {
+			"light_bit": 1073741824,
+			"offset": 124
+		},
+		"10": null,
+		"11": null,
+		"12": {
+			"light_bit": 65536,
+			"offset": 128
+		},
+		"13": null,
+		"14": {
+			"light_bit": 262144,
+			"offset": 128
+		},
+		"15": {
+			"light_bit": 131072,
+			"offset": 128
+		},
+		"16": null,
+		"17": {
+			"light_bit": 134217728,
+			"offset": 108
+		},
+		"4": {
+			"light_bit": 1,
+			"offset": 108
+		},
+		"5": null,
+		"6": null,
+		"7": null,
+		"8": null,
+		"9": null
 	},
-	"10": null,
-	"11": null,
-	"12": {
-		"light_bit": 65536,
-		"offset": 128
-	},
-	"13": null,
-	"14": {
-		"light_bit": 262144,
-		"offset": 128
-	},
-	"15": {
-		"light_bit": 131072,
-		"offset": 128
-	},
-	"16": null,
-	"17": {
-		"light_bit": 134217728,
-		"offset": 108
-	},
-	"4": {
-		"light_bit": 1,
-		"offset": 108
-	},
-	"5": null,
-	"6": null,
-	"7": null,
-	"8": null,
-	"9": null
+	"retro_mode": false
 }
 )";
 
-PTO2LightBinds	init_PTO2_light_map_and_conf_file()
+void	init_settings_and_conf_file()
 {
 	PTO2LightBinds	mapping;
 
 	if (!std::filesystem::exists(get_conf_file_path()))
 	{
 		Json conf = Json::parse(DEFAULT_PTO2_JSON_CONF);
-		mapping = json_to_PTO2_mapping(conf);
+		g_context.PTO2_light_assignment_map = json_to_PTO2_mapping(conf);
+		g_context.retro_mode = false;
 		std::ofstream conf_file(get_conf_file_path());
 		conf_file << conf.dump();
 	}
 	else
 	{
-		mapping = deserialize_conf_to_PTO2_mapping();
+		deserialize_conf_to_settings();
 	}
-	return mapping;
 }

@@ -5,6 +5,12 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "PTO2_for_BMS.hpp"
+#include "Uxtheme.h"
+
+#define GL_SILENCE_DEPRECATION
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h> // Will drag system OpenGL headers
 
 ImGuiStyle	get_custom_imgui_style(float scale_factor)
 {
@@ -102,11 +108,11 @@ ImGuiStyle	get_retro_imgui_style(float scale_factor)
 * Change ImGui's style and our custom font's size to match given DPI.
 * Standard DPI (100% scale) is considered to be 96.
 */
-void	set_ImGui_scaling_from_DPI(UINT new_dpi)
+void	set_app_style(UINT new_dpi, bool retro_mode)
 {
 	// Set ImGui style scale based on the screen's scaling factor (DPIs)
 	float scale_factor = (float)new_dpi / USER_DEFAULT_SCREEN_DPI;
-	if (g_context.retro_mode)
+	if (retro_mode)
 		ImGui::GetStyle() = get_retro_imgui_style(scale_factor);
 	else
 		ImGui::GetStyle() = get_custom_imgui_style(scale_factor);
@@ -115,13 +121,18 @@ void	set_ImGui_scaling_from_DPI(UINT new_dpi)
 	// https://github.com/ocornut/imgui/issues/6547
 	ImGuiIO &io = ImGui::GetIO();
 	io.Fonts->Clear();
-	const char *font = g_context.retro_mode
+	const char *font = retro_mode
 		? W95_font_compressed_data_base85
 		: Roboto_Medium_compressed_data_base85;
 	io.Fonts->AddFontFromMemoryCompressedBase85TTF(font, std::trunc(17 * scale_factor));
 	io.Fonts->Build();
 	ImGui_ImplOpenGL3_DestroyDeviceObjects();
 	ImGui_ImplOpenGL3_CreateDeviceObjects();
+
+	// Set Win32 window theme to either native or Windows 95 style for retro mode
+	HWND hWnd = glfwGetWin32Window(g_context.glfw_window);
+	LPCWSTR window_theme = (g_context.retro_mode ? L"" : nullptr);
+	SetWindowTheme(hWnd, window_theme, window_theme);
 }
 
 namespace widgets {
