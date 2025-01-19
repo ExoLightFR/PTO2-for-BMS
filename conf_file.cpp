@@ -114,7 +114,7 @@ void	serialize_settings_to_conf_file(PTO2LightBinds const &mapping)
 	Json conf;
 	conf.emplace("light_mapping", PTO2_mapping_to_json(mapping));
 	conf["retro_mode"] = g_context.retro_mode;
-	conf_file << conf.dump(4);
+	conf_file << conf.dump();
 }
 
 void	deserialize_conf_to_settings()

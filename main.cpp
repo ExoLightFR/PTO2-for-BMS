@@ -10,7 +10,7 @@
 #include <windows.h>
 #include <WinUser.h>
 #include <shellapi.h>
-#include <dwmapi.h>
+#include "Uxtheme.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -222,11 +222,6 @@ int main(void)
 	HWND hWnd = glfwGetWin32Window(window);
 	s_glfw_wndproc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
 	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
-
-	// TODO: Get light/dark mode
-	BOOL value = true;
-	HRESULT res = DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
-	// TODO: Find a way to change color of taskbar icon menu to match Windows theme
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);

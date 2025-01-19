@@ -63,6 +63,9 @@
     <ClCompile Include="firmware_check.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="embed_w95_font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\FlightData.h">
