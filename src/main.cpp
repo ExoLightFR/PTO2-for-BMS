@@ -10,7 +10,7 @@
 #include <windows.h>
 #include <WinUser.h>
 #include <shellapi.h>
-#include "Uxtheme.h"
+#include <Uxtheme.h>
 #include <Dbt.h>
 
 #include "imgui.h"
@@ -24,7 +24,6 @@
 
 #include <thread>
 
-#include "resource.h"
 #include "PTO2_for_BMS.hpp"
 
 static void glfw_error_callback(int error, const char* description)
