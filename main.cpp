@@ -11,6 +11,7 @@
 #include <WinUser.h>
 #include <shellapi.h>
 #include "Uxtheme.h"
+#include <Dbt.h>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -158,6 +159,15 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return CallWindowProc(s_glfw_wndproc, hWnd, uMsg, wParam, lParam);
 		}
 		return TRUE;
+	}
+	case WM_DEVICECHANGE:
+	{
+		if (wParam == DBT_DEVNODES_CHANGED)
+		{
+			// Stop thread and require device reopening if device is not reachable anymore
+			// (i.e. has been disconnected)
+			g_context.require_device_reopen = !is_device_still_reachable(g_context.hid_device);
+		}
 	}
 	default:
 		// Subclass GLFW's window processing handler

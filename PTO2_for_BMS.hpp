@@ -105,6 +105,8 @@ struct Context
 
 	struct GLFWwindow	*glfw_window = nullptr;
 
+	// I could use jthread's stop source/token, except that I believe would just be more convoluted than
+	// this atomic bool for my use.
 	std::jthread		thread;
 	std::atomic_bool	thread_running = false;
 	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
@@ -151,6 +153,7 @@ void			change_tray_icon(int IDI_thingy);
 void			remove_tray_icon();
 std::wstring	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value);
 int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value, std::wstring &outstr);
+bool			is_device_still_reachable(hid_device *device);
 
 /*
 * Enumeration of all cockpit data that can be checked by the app to synchronise a PTO2 light.

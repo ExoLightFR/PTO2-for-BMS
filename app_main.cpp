@@ -174,6 +174,12 @@ void    render_main_window(ImGuiIO &io)
 	// No need to use atomic CAS here I think, nobody else would set require_device_reopen to false
 	if (g_context.require_device_reopen == true)
 	{
+		// Stop & join thread, otherwise thread could still try to write data when device has been closed & NULLified
+		if (g_context.thread_running)
+		{
+			g_context.thread_running = false;
+			g_context.thread.join();
+		}
 		hid_close(g_context.hid_device);
 		g_context.hid_device = nullptr;
 		g_context.require_device_reopen = false;

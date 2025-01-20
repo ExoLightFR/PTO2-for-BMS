@@ -2,10 +2,13 @@
 #include <stdexcept>
 #include <Windows.h>
 #include <shellapi.h>
+#include <Uxtheme.h>
+// Native Windows stuff, NOT hidapi's library
+#include <hidsdi.h>
+
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "PTO2_for_BMS.hpp"
-#include "Uxtheme.h"
 
 #define GL_SILENCE_DEPRECATION
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
@@ -310,4 +313,19 @@ int	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &valu
 		return 2;
 	outstr.resize(dataSize / sizeof(wchar_t) - 1);
 	return 0;
+}
+
+/*
+* Poll the device for something useless and not too costly.
+* Use this to check whether our HID device is still reachable after a WM_DEVICECHANGE:DBT_DEVNODES_CHANGED
+* message from Windows.
+*/
+bool	is_device_still_reachable(hid_device *device)
+{
+	HIDD_ATTRIBUTES attributes;
+	(void)attributes; // Don't care about this value, we just want to see if device is reachable
+
+	// hid_device is an opaque structure, but the underlying HANDLE for the HID device is its first member.
+	HANDLE *device_handle = reinterpret_cast<HANDLE *>(device);
+	return device != nullptr && HidD_GetAttributes(*device_handle, &attributes) == TRUE;
 }

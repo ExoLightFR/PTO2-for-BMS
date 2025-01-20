@@ -38,8 +38,6 @@ static std::string get_supported_firmware_str(std::array<uint16_t, N> const &fir
 namespace widgets {
 
 	/*
-	* WIP
-	*
 	* Popup modal to warn user about firmware version mismatch.
 	* Since there is no guarantee that a firmware update of the PTO2 doesn't change the protocol
 	* for LED control, we have to ensure a whitelist of firmware versions.
