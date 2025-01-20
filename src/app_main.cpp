@@ -1,5 +1,4 @@
 #include "PTO2_for_BMS.hpp"
-#include "resource.h"
 #include "nlohmann/json_fwd.hpp"
 #include "nlohmann/json.hpp"
 

@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="embed_roboto_medium.cpp">
+    <ClCompile Include="src\embed_roboto_medium.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="app_main.cpp">
+    <ClCompile Include="src\app_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
@@ -48,22 +48,22 @@
     <ClCompile Include="hidapi\hid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="falcon_light_data_list.cpp">
+    <ClCompile Include="src\falcon_light_data_list.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="utils.cpp">
+    <ClCompile Include="src\utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="conf_file.cpp">
+    <ClCompile Include="src\conf_file.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="light_assign_widget.cpp">
+    <ClCompile Include="src\light_assign_widget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="firmware_check.cpp">
+    <ClCompile Include="src\firmware_check.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="embed_w95_font.cpp">
+    <ClCompile Include="src\embed_w95_font.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,7 +74,7 @@
     <ClInclude Include="include\IVibeData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PTO2_for_BMS.hpp">
+    <ClInclude Include="include\PTO2_for_BMS.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imconfig.h">
@@ -134,7 +134,7 @@
     <ClInclude Include="include\fts_fuzzy_match.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PerformanceTimer.hpp">
+    <ClInclude Include="include\PerformanceTimer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="version.h">

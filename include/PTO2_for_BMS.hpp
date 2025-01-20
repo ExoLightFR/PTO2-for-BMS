@@ -13,10 +13,10 @@
 #include "imgui.h"
 #include "hidapi.h"
 #include "FlightData.h"
-#include "resource.h"
+#include "../resource.h"
 
 /* ========================== VERSION INFORMATION ========================== */
-#include "version.h"
+#include "../version.h"
 #define STRINGIFY(x)		#x
 #define TOSTRING(x)			STRINGIFY(x)
 #define VERSION_STRING_FULL	TOSTRING(VERSION_MAJOR) "." TOSTRING(VERSION_MINOR) "." TOSTRING(VERSION_REVISION) "." TOSTRING(VERSION_BUILD)

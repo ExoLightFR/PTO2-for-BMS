@@ -3,7 +3,7 @@
 <h3 align="center">A small utility to synchronize your Winwing PTO2 lights with Falcon BMS</h3>
 
 <p align="center">
-  <img src="preview.png" />
+  <img src="resources/preview.png" />
 </p>
 
 ## Installation instructions

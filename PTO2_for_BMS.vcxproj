@@ -94,12 +94,12 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="app_main.cpp" />
-    <ClCompile Include="conf_file.cpp" />
-    <ClCompile Include="embed_roboto_medium.cpp" />
-    <ClCompile Include="embed_w95_font.cpp" />
-    <ClCompile Include="falcon_light_data_list.cpp" />
-    <ClCompile Include="firmware_check.cpp" />
+    <ClCompile Include="src\app_main.cpp" />
+    <ClCompile Include="src\conf_file.cpp" />
+    <ClCompile Include="src\embed_roboto_medium.cpp" />
+    <ClCompile Include="src\embed_w95_font.cpp" />
+    <ClCompile Include="src\falcon_light_data_list.cpp" />
+    <ClCompile Include="src\firmware_check.cpp" />
     <ClCompile Include="hidapi\hid.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -108,9 +108,9 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="light_assign_widget.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="src\light_assign_widget.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hidapi\hidapi.h" />
@@ -133,8 +133,8 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClInclude Include="include\IVibeData.h" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="include\nlohmann\json_fwd.hpp" />
-    <ClInclude Include="PerformanceTimer.hpp" />
-    <ClInclude Include="PTO2_for_BMS.hpp" />
+    <ClInclude Include="include\PerformanceTimer.hpp" />
+    <ClInclude Include="include\PTO2_for_BMS.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
