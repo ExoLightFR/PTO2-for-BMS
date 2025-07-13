@@ -1,4 +1,4 @@
-#include <fstream>
+﻿#include <fstream>
 #include <filesystem>
 
 #include "nlohmann/json_fwd.hpp"
@@ -71,20 +71,23 @@ PTO2LightBinds	json_to_PTO2_mapping(Json const &conf)
 }
 
 /*
-* Get the path of the configuration file. The conf file is located in the BMS /User/Config,
-* or in the current working directory if a valid BMS install is not found.
-* The function looks for BMS installs in the Windows registry, and uses the most recent BMS
-* version found (e.g. if 4.36 & 4.37 are both installed, it will return path to 4.27/User/Config).
+* Get all of the paths of configuration files, sorted by version number. Conf files are
+* located in every detected BMS install's /User/Config directory.
+* The resulting vector ALWAYS ends with the PWD of the executable. This is meant to be the
+* "last resort" in case no BMS install is detected.
+* For example, if you have BMS 4.37 & 4.38, the resulting vector would be:
+* { "path_to_4.37", "path_to_4.38", "PWD" }
 */
-static std::filesystem::path	get_conf_file_path()
+std::vector<ConfFileLocation>	get_conf_file_paths()
 {
 	namespace fs = std::filesystem;
 
+	std::vector<ConfFileLocation> installs;
 	const wchar_t *possible_BMS_installs[] = {
-		L"Falcon BMS 4.39",	// Inshallah this will be future proof
-		L"Falcon BMS 4.38", // Soon™
-		L"Falcon BMS 4.37",
 		L"Falcon BMS 4.36",
+		L"Falcon BMS 4.37",
+		L"Falcon BMS 4.38", // Soon™
+		L"Falcon BMS 4.39",	// Inshallah this will be future proof
 	};
 
 	std::wstring bms_reg_path_prefix = REG_BENCHMARKSIMS_PATH;
@@ -97,20 +100,32 @@ static std::filesystem::path	get_conf_file_path()
 			// This API looks cool, until you actually use it. God dammit, C++ committee.
 			fs::path conf_path = bms_root;
 			conf_path = conf_path / "User" / "Config";
-			// Go for BMS User/Config if it exists, otherwise use PWD as backup
 			if (fs::is_directory(conf_path))
-				return conf_path / CONF_FILE_NAME;
-			else
-				return fs::current_path() / CONF_FILE_NAME;
+			{
+				char name[] = "BMS X.YY";
+// Yes, it is "unsafe". It's fine here though.
+#pragma warning(suppress : 4996)
+				std::wcstombs(name, suffix + 7, sizeof(name));
+				name[8] = '\0'; // NULL-terminate, just in case.
+				installs.emplace_back(ConfFileLocation{
+					.install_name = name,
+					.full_path = conf_path / CONF_FILE_NAME
+				});
+			}
 		}
 	}
-	// Nothing, use working directory
-	return fs::current_path() / CONF_FILE_NAME;
+	// Append PWD to the end of the vector as a fallback option
+	installs.emplace_back(ConfFileLocation{
+		.install_name = "PWD",
+		.full_path = fs::current_path() / CONF_FILE_NAME
+	});
+
+	return installs;
 }
 
 void	serialize_settings_to_conf_file(PTO2LightBinds const &mapping)
 {
-	std::ofstream conf_file(get_conf_file_path());
+	std::ofstream conf_file(g_context.get_selected_conf().full_path);
 	Json conf;
 	conf.emplace("light_mapping", PTO2_mapping_to_json(mapping));
 	conf["retro_mode"] = g_context.retro_mode;
@@ -120,7 +135,7 @@ void	serialize_settings_to_conf_file(PTO2LightBinds const &mapping)
 void	deserialize_conf_to_settings()
 {
 	try {
-		std::ifstream conf_file(get_conf_file_path());
+		std::ifstream conf_file(g_context.get_selected_conf().full_path);
 		Json conf;
 		conf_file >> conf;
 		if (conf.contains("retro_mode") && conf["retro_mode"].is_boolean())
@@ -180,18 +195,46 @@ static const char *DEFAULT_PTO2_JSON_CONF = R"(
 }
 )";
 
+/*
+* For every detected BMS install, create a config file if it does not exist.
+* If there is at least one BMS install, select it, and load its config file.
+* If no BMS install is found, create a conf file in PWD and load it.
+*/
 void	init_settings_and_conf_file()
 {
 	PTO2LightBinds	mapping;
 
-	if (!std::filesystem::exists(get_conf_file_path()))
+	// Initialize conf files into all BMS installs if they do not exist yet
+	for (int i = 0; i < g_context.conf_file_paths.size() - 1; ++i)
+	{
+		auto &conf_file_path = g_context.conf_file_paths[i];
+		if (!std::filesystem::exists(conf_file_path.full_path))
+		{
+			Json conf = Json::parse(DEFAULT_PTO2_JSON_CONF);
+			g_context.PTO2_light_assignment_map = json_to_PTO2_mapping(conf);
+			g_context.retro_mode = false;
+			std::ofstream conf_file(conf_file_path.full_path);
+			conf_file << conf.dump();
+		}
+	}
+
+	// If there is at least one BMS install detected, select the last possible install
+	// (which would be the most recent). Otherwise, leave this variable initialized to 0.
+	if (g_context.conf_file_paths.size() >= 2)
+		g_context.selected_conf_file_idx = g_context.conf_file_paths.size() - 2;
+
+	// If no BMS install is found, fallback to PWD (which would be the last item in the vector).
+	// Check if file exists in PWD, if not, create it.
+	if (g_context.conf_file_paths.size() == 1
+		&& !std::filesystem::exists(g_context.conf_file_paths.back().full_path))
 	{
 		Json conf = Json::parse(DEFAULT_PTO2_JSON_CONF);
 		g_context.PTO2_light_assignment_map = json_to_PTO2_mapping(conf);
 		g_context.retro_mode = false;
-		std::ofstream conf_file(get_conf_file_path());
+		std::ofstream conf_file(g_context.conf_file_paths.back().full_path);
 		conf_file << conf.dump();
 	}
+	// At least one file is found (in PWD or BMS), deserialize it
 	else
 	{
 		deserialize_conf_to_settings();

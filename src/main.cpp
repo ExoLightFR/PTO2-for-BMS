@@ -1,4 +1,4 @@
-// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
+﻿// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
 // (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
 
 // Learn about Dear ImGui:
@@ -146,8 +146,6 @@ LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			g_context.retro_mode = !g_context.retro_mode;
 			// Reset style, the function takes retro theme into account
 			set_app_style(GetDpiForWindow(hWnd), g_context.retro_mode);
-			LPCWSTR window_theme = (g_context.retro_mode ? L"" : nullptr);
-			SetWindowTheme(hWnd, window_theme, window_theme);
 			serialize_settings_to_conf_file(g_context.PTO2_light_assignment_map);
 			break;
 		}
@@ -263,6 +261,12 @@ int main(void)
 		// Update the system tray icon based on connection status
 		int icon_id = (g_context.thread_running ? WINDOW_ICON_ID_GREEN : WINDOW_ICON_ID_RED);
 		change_tray_icon(icon_id);
+
+		if (g_context.request_theme_refresh)
+		{
+			set_app_style(GetDpiForWindow(hWnd), g_context.retro_mode);
+			g_context.request_theme_refresh = false;
+		}
 
 		// Poll and handle events (inputs, window resize, etc.)
 		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.

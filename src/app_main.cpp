@@ -1,4 +1,4 @@
-#include "PTO2_for_BMS.hpp"
+﻿#include "PTO2_for_BMS.hpp"
 #include "nlohmann/json_fwd.hpp"
 #include "nlohmann/json.hpp"
 
@@ -156,6 +156,59 @@ namespace widgets {
 		}
 	}
 
+	/*
+	* Row of several horizontal buttons to select which config file to use. One button for
+	* each detected BMS install. Returns whether or not a button was clicked.
+	*/
+	static bool	BMS_version_select()
+	{
+		bool clicked = false;
+
+		auto button = [](const char *label, bool selected, float width)
+			{
+				ImGuiCol color = ImGui::GetColorU32(ImGuiCol_ButtonActive);
+				if (selected)
+					return widgets::ColoredButton(label, color, { width, 0 });
+				else
+					return ImGui::Button(label, { width, 0 });
+			};
+
+		ImGui::BeginDisabled(g_context.thread_running || g_context.conf_file_paths.size() == 1);
+		if (g_context.conf_file_paths.size() == 1)
+		{
+			ImGui::Button("No BMS installation found, configuration file is in current folder", {-1, 0});
+		}
+		else
+		{
+			// Set x-spacing to y-spacing to be consistent
+			ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, ImGui::GetStyle().ItemSpacing.y);
+			size_t num_of_installs = g_context.conf_file_paths.size() - 1;
+			// Calculate individual button width from content region & x-spacing of buttons
+			float width_avail = ImGui::GetContentRegionAvail().x - (ImGui::GetStyle().ItemSpacing.x * (num_of_installs - 1));
+			float button_width = width_avail / num_of_installs;
+			for (size_t i = 0; i < num_of_installs; ++i)
+			{
+				std::string const& install_name = g_context.conf_file_paths[i].install_name;
+				// Because of sub-pixel width shenanigans, just let ImGui handle the width of the last button
+				if (i == num_of_installs - 1)
+					button_width = -1;
+				if (button(install_name.c_str(), g_context.selected_conf_file_idx == i, button_width))
+				{
+					g_context.selected_conf_file_idx = i;
+					clicked = true;
+				}
+				// Same line except the last button
+				if (i != num_of_installs - 1)
+					ImGui::SameLine();
+			}
+			ImGui::PopStyleVar();
+
+		}
+		ImGui::EndDisabled();
+
+		return clicked;
+	}
+
 } // namespace widgets
 
 void    render_main_window(ImGuiIO &io)
@@ -193,7 +246,21 @@ void    render_main_window(ImGuiIO &io)
 	widgets::PTO2_firmware_warning_modal();
 
 	widgets::connect_button();
-	ImGui::Spacing(); // Empty spacing below button
+	if (widgets::BMS_version_select())
+	{
+		bool old_retro = g_context.retro_mode;
+		deserialize_conf_to_settings();
+		if (g_context.retro_mode != old_retro)
+		{
+			// Can't change the font atlas while rendering ImGui stuff. Instead, request it
+			// to be done before next frame is started.
+			g_context.request_theme_refresh = true;
+		}
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	// Ensure thread safety by disabling editing when thread is running. Who needs mutexes anyway?
 	ImGui::BeginDisabled(g_context.thread_running);

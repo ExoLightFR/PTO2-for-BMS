@@ -1,4 +1,4 @@
-#include <string>
+﻿#include <string>
 #include <stdexcept>
 #include <Windows.h>
 #include <shellapi.h>
@@ -145,12 +145,13 @@ namespace widgets {
 	*/
 	bool	ColoredButton(const char* label, ImColor color, const ImVec2& size)
 	{
-		float h, s, v;
+		float h, s, v, a;
+		a = color.Value.w;
 		ImGui::ColorConvertRGBtoHSV(color.Value.x, color.Value.y, color.Value.z, h, s, v);
 
-		ImGui::PushStyleColor(ImGuiCol_Button,			(ImVec4)ImColor::HSV(h, s, v));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,	(ImVec4)ImColor::HSV(h, s, v + 0.1f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive,	(ImVec4)ImColor::HSV(h, s, v + 0.2f));
+		ImGui::PushStyleColor(ImGuiCol_Button,			(ImVec4)ImColor::HSV(h, s, v, a));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered,	(ImVec4)ImColor::HSV(h, s, v + 0.1f, a));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive,	(ImVec4)ImColor::HSV(h, s, v + 0.2f, a));
 		bool pressed = ImGui::Button(label, size);
 		ImGui::PopStyleColor(3);
 

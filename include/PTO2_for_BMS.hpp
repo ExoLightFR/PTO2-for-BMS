@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <thread>
 #include <atomic>
@@ -99,31 +99,6 @@ std::vector<FalconLightData>	init_falcon_light_data_list();
 
 using PTO2LightBinds = std::array< std::optional<FalconLightData>, HOOK + 1 >;
 
-struct Context
-{
-	hid_device			*hid_device = nullptr;
-
-	struct GLFWwindow	*glfw_window = nullptr;
-
-	// I could use jthread's stop source/token, except that I believe would just be more convoluted than
-	// this atomic bool for my use.
-	std::jthread		thread;
-	std::atomic_bool	thread_running = false;
-	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
-	// Used in case of hid_write error.
-	std::atomic_bool	require_device_reopen = false;
-
-	const std::vector<FalconLightData>	falcon_lights = init_falcon_light_data_list();
-	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
-	PTO2LightBinds	PTO2_light_assignment_map;
-
-	bool	retro_mode = false;
-	struct {
-		unsigned int	min_y = 0;		// GLFW minimum window height
-		unsigned int	imgui_y = 0;	// ImGui main window height (even if clipped by GLFW window)
-	} window_sizes;
-};
-
 ImGuiStyle		get_custom_imgui_style(float scale_factor);
 ImGuiStyle		get_retro_imgui_style(float scale_factor);
 void			set_app_style(UINT new_dpi, bool retro_mode);
@@ -139,10 +114,17 @@ namespace widgets {
 	void		PTO2_firmware_warning_modal();
 }
 
+struct ConfFileLocation
+{
+	std::string install_name = "";
+	std::filesystem::path full_path;
+};
+
 // Serialisation for JSON config file
 void			init_settings_and_conf_file();
 Json			PTO2_mapping_to_json(PTO2LightBinds const &mapping);
 PTO2LightBinds	json_to_PTO2_mapping(Json const &conf);
+auto			get_conf_file_paths() -> std::vector<ConfFileLocation>;
 void			serialize_settings_to_conf_file(PTO2LightBinds const &mapping);
 void			deserialize_conf_to_settings();
 
@@ -154,6 +136,38 @@ void			remove_tray_icon();
 std::wstring	RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value);
 int				RegGetString(HKEY hKey, const std::wstring &subKey, const std::wstring &value, std::wstring &outstr);
 bool			is_device_still_reachable(hid_device *device);
+
+struct Context
+{
+	hid_device *hid_device = nullptr;
+
+	struct GLFWwindow *glfw_window = nullptr;
+
+	// I could use jthread's stop source/token, except that I believe would just be more convoluted than
+	// this atomic bool for my use.
+	std::jthread		thread;
+	std::atomic_bool	thread_running = false;
+	// Not pretty but I don't really care. Asks for the main thread to close and reopen the HID device.
+	// Used in case of hid_write error.
+	std::atomic_bool	require_device_reopen = false;
+	// Request theme to be refreshed before next ImGui frame. Needed because ImGui font atlas can't be
+	// changed during current frame.
+	bool				request_theme_refresh = true;
+
+	const std::vector<FalconLightData>	falcon_lights = init_falcon_light_data_list();
+	// Array that maps PTO2 lights to a Falcon LightID (shared memory offset + bit to check)
+	PTO2LightBinds	PTO2_light_assignment_map;
+
+	bool	retro_mode = false;
+	struct {
+		unsigned int	min_y = 0;		// GLFW minimum window height
+		unsigned int	imgui_y = 0;	// ImGui main window height (even if clipped by GLFW window)
+	} window_sizes;
+	std::vector<ConfFileLocation>	conf_file_paths = get_conf_file_paths();
+	size_t							selected_conf_file_idx = 0;
+
+	ConfFileLocation&	get_selected_conf() noexcept	{ return conf_file_paths[selected_conf_file_idx]; }
+};
 
 /*
 * Enumeration of all cockpit data that can be checked by the app to synchronise a PTO2 light.
