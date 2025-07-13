@@ -113,6 +113,7 @@ copy /y "$(SolutionDir)$(Platform)\$(Configuration)\$(TargetName).exe" "$(Soluti
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\light_assign_widget.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\main_button_widgets.cpp" />
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>

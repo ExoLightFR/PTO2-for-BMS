@@ -107,6 +107,8 @@ void			render_main_window(ImGuiIO &io);
 
 // ImGui custom widgets
 namespace widgets {
+	void		connect_button();
+	bool		BMS_version_select();
 	bool		ColoredButton(const char *label, ImColor color, const ImVec2 &size = ImVec2(0, 0));
 	void		TextCentered(const char *text);
 	bool		PTO2_light_assign(const char *label, PTO2LightID PTO_light_ID,
