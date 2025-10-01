@@ -1,6 +1,7 @@
 ﻿#include "PTO2_for_BMS.hpp"
 #include "nlohmann/json_fwd.hpp"
 #include "nlohmann/json.hpp"
+#include "IvibeData.h"
 
 //  BACKLIGHT FULL:		02 05 BF 00 00 03 49 00 FF 00 00 00 00 00
 //  BACKLIGHT OFF:		02 05 BF 00 00 03 49 00 00 00 00 00 00 00
@@ -82,29 +83,32 @@ static bool	is_light_on(void *shared_mem, PTO2LightID PTO_light)
 
 void	thread_routine()
 {
-	HANDLE file_map_handle = OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea");
-	if (!file_map_handle)
+	// Make some smart pointers for the handles to have an easier time
+	using FileMapUniquePtr = std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&CloseHandle)>;
+	using MemMapUniquePtr = std::unique_ptr<std::remove_pointer<LPVOID>::type, decltype(&UnmapViewOfFile)>;
+
+	// Shared memory handles & pointers, also use IVibe to know if we're in 3D
+	FileMapUniquePtr file_map_handle(OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconSharedMemoryArea"), &CloseHandle);
+	MemMapUniquePtr bms_shared_mem(MapViewOfFile(file_map_handle.get(), FILE_MAP_READ, 0, 0, 0), &UnmapViewOfFile);
+	FileMapUniquePtr ivibe_handle(OpenFileMappingA(FILE_MAP_READ, FALSE, "FalconIntellivibeSharedMemoryArea"), &CloseHandle);
+	MemMapUniquePtr ivibe_shared_mem(MapViewOfFile(ivibe_handle.get(), FILE_MAP_READ, 0, 0, 0), &UnmapViewOfFile);
+	
+	if (!bms_shared_mem || !ivibe_shared_mem)
 		return;
 
-	LPVOID bms_shared_mem = MapViewOfFile(file_map_handle, FILE_MAP_READ, 0, 0, 0);
-	const FlightData *flight_data = reinterpret_cast<FlightData *>(bms_shared_mem);
-	if (!flight_data)
-	{
-		UnmapViewOfFile(bms_shared_mem);
-		return;
-	}
+	volatile bool *in_3d = &reinterpret_cast<IntellivibeData *>(ivibe_shared_mem.get())->In3D;
 
 	g_context.thread_running = true;
 	while (g_context.thread_running)
 	{
 		bool success = true;
 		success = success && set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS,
-			is_light_on(bms_shared_mem, GEAR_HANDLE_BRIGHTNESS));
+			*in_3d && is_light_on(bms_shared_mem.get(), GEAR_HANDLE_BRIGHTNESS));
 		for (int i = MASTER_CAUTION; i <= HOOK; ++i)
 		{
 			PTO2LightID PTO_light = static_cast<PTO2LightID>(i);
 			success = success && set_PTO2_light(g_context.hid_device, PTO_light,
-				is_light_on(bms_shared_mem, PTO_light));
+				*in_3d && is_light_on(bms_shared_mem.get(), PTO_light));
 		}
 		if (!success)
 		{	// Failed HID write operation, most likely because device is disconnected: stop the thread.
@@ -114,8 +118,11 @@ void	thread_routine()
 		std::this_thread::sleep_for(THREAD_SLEEP_INTERVAL);
 	}
 
-	UnmapViewOfFile(bms_shared_mem);
-	CloseHandle(file_map_handle);
+	// Set all lights to off when thread is stopping
+	(void)set_PTO2_light(g_context.hid_device, GEAR_HANDLE_BRIGHTNESS, false);
+	for (int i = MASTER_CAUTION; i <= HOOK; ++i)
+		(void)set_PTO2_light(g_context.hid_device, static_cast<PTO2LightID>(i), false);
+
 	set_window_icon(WINDOW_ICON_ID_RED);
 }
 
